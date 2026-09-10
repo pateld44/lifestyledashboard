@@ -1,6 +1,6 @@
 # Lifestyle Dashboard — PRD
 
-**Status:** Phase 1 shipped
+**Status:** Phase 1 shipped, Phase 2 planned
 **Owner:** pateld44
 **Last updated:** 2026-09-09
 
@@ -91,12 +91,74 @@ app and the artifact is updated and re-exported into `artifact/daybook.html`.
 - Clearing browser storage or opening a private window loses all data.
 - Single day of state at a time; no date-based history is stored.
 
-## Open questions / candidate Phase 2 work
+## Phase 2 (planned): Widgets & email-based goal tracking
 
-- Persist history across days (trends for streaks, sleep, spending over time)?
-- Cross-device sync (would require an account and backend)?
-- Reminders/notifications for unlogged habits or vitals?
-- Multiple budget categories instead of one flat monthly total?
+### Summary
+
+Phase 2 turns the dashboard from a fixed three-panel layout into an extensible
+surface, and adds automated goal-vs-execution tracking by connecting the dashboard
+to the user's email — so progress on stated goals can be checked against what
+actually happened in the inbox, instead of relying only on manual entry.
+
+### Goals
+
+- Any panel becomes a **widget**: addable, removable, and reorderable without a
+  redesign each time a new one is introduced.
+- The user can define a **goal** (e.g., "apply to 5 jobs this week," "no more than 2
+  takeout orders this month").
+- The dashboard **connects to email**, reads relevant messages, and tallies evidence
+  of execution against each goal automatically.
+- A widget shows **goal vs. actual** at a glance, so the gap is visible without the
+  user manually tracking it elsewhere.
+
+### Features
+
+**Widget framework**
+- Common widget contract (title, accent color, render, persist) so new panels can be
+  added without touching the rest of the layout.
+- Users can add, remove, and reorder widgets from the dashboard itself.
+- Phase 1's three panels (Habits, Vitals, Ledger) become the first widgets under this
+  framework, unchanged in behavior.
+
+**Email-connected goal tracking widget**
+- User connects an email account (e.g., Gmail) to the dashboard.
+- User defines one or more goals with a target (count, frequency, or amount).
+- The dashboard automatically checks the connected inbox for messages matching each
+  goal (confirmation emails, receipts, calendar invites, application confirmations,
+  etc.) and counts them as evidence of execution.
+- Widget displays each goal next to its actual tally (e.g., target 5 / actual 2) and
+  the messages counted toward it.
+
+### Technical considerations
+
+This phase moves the project from fully client-side (Phase 1) to one that needs a
+backend:
+- OAuth with an email provider (e.g., Gmail API) requires a server or serverless
+  function to hold tokens — this cannot be done securely from a static page alone.
+- Matching rules and goal definitions need a real store, not `localStorage`.
+- Email access should be scoped as narrowly as possible (read-only, ideally limited
+  to specific labels/folders) to limit privacy exposure.
+- The artifact ("Daybook") likely can't host this widget directly, since it has no
+  backend and the Artifact sandbox blocks arbitrary outbound network calls; the
+  artifact would show a manual-entry or read-only version of the same widget, while
+  the coded app hosts the live email connection.
+
+### Open questions
+
+- Which email provider(s) first — Gmail only, or Gmail plus Outlook?
+- How are goals defined — free-text with keyword matching, or structured rules per
+  goal (sender, subject pattern, label)?
+- Fully automatic matching, or does the user confirm/correct matches before they
+  count, to avoid silent false positives?
+- Where do OAuth tokens and goal data live — a small self-hosted backend, or a
+  managed auth/database provider?
+
+## Beyond Phase 2 (later candidates)
+
+- Persist history across days (trends for streaks, sleep, spending over time).
+- Cross-device sync of dashboard state itself (not just the email connection).
+- Reminders/notifications for unlogged habits or vitals.
+- Multiple budget categories instead of one flat monthly total.
 
 ## Getting started (coded app)
 
