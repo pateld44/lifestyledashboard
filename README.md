@@ -1,32 +1,20 @@
-# React + TypeScript + Vite
+# Lifestyle Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A personal daily dashboard for habits, health, and spending.
 
-Currently, two official plugins are available:
+## Coded app
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Vite + React + TypeScript + Tailwind. Data is stored in the browser via `localStorage`.
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Shareable artifact
+
+`artifact/daybook.html` is a standalone, single-file version ("Daybook") published as a
+Claude Artifact for quick viewing/sharing without running the dev server:
+https://claude.ai/code/artifact/dd0e5337-1126-4eb9-b262-907c4d48341b
+
+It's kept in sync manually — when the artifact is updated, re-export its source here.

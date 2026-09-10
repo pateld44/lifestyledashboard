@@ -1,0 +1,748 @@
+<title>Daybook</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,440;9..144,560&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #e9ece2;
+    --surface: #fbfbf7;
+    --surface-2: #f2f4ea;
+    --ink: #1d241b;
+    --text: #4a5245;
+    --text-dim: #7b8472;
+    --line: #d8dbcc;
+    --accent-habits: #6a45e0;
+    --accent-habits-bg: rgba(106, 69, 224, 0.1);
+    --accent-health: #1c8a6b;
+    --accent-health-bg: rgba(28, 138, 107, 0.1);
+    --accent-finance: #a8672a;
+    --accent-finance-bg: rgba(168, 103, 42, 0.1);
+    --good: #3c9b5f;
+    --warn: #d98c2b;
+    --critical: #b23b3b;
+    --shadow: 0 1px 2px rgba(29, 36, 27, 0.04), 0 8px 20px -12px rgba(29, 36, 27, 0.18);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #10130d;
+      --surface: #1a1f16;
+      --surface-2: #20261a;
+      --ink: #edefe5;
+      --text: #b6beac;
+      --text-dim: #7c8571;
+      --line: #2c3325;
+      --accent-habits: #a088f5;
+      --accent-habits-bg: rgba(160, 136, 245, 0.14);
+      --accent-health: #3fc495;
+      --accent-health-bg: rgba(63, 196, 149, 0.14);
+      --accent-finance: #d89b4c;
+      --accent-finance-bg: rgba(216, 155, 76, 0.14);
+      --good: #57b37e;
+      --warn: #e4a93c;
+      --critical: #d96666;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 24px -14px rgba(0, 0, 0, 0.5);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #10130d;
+    --surface: #1a1f16;
+    --surface-2: #20261a;
+    --ink: #edefe5;
+    --text: #b6beac;
+    --text-dim: #7c8571;
+    --line: #2c3325;
+    --accent-habits: #a088f5;
+    --accent-habits-bg: rgba(160, 136, 245, 0.14);
+    --accent-health: #3fc495;
+    --accent-health-bg: rgba(63, 196, 149, 0.14);
+    --accent-finance: #d89b4c;
+    --accent-finance-bg: rgba(216, 155, 76, 0.14);
+    --good: #57b37e;
+    --warn: #e4a93c;
+    --critical: #d96666;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 24px -14px rgba(0, 0, 0, 0.5);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Public Sans', system-ui, sans-serif;
+    padding-block: 40px;
+  }
+
+  .page {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding-inline: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  header {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  h1 {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 560;
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  header p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 60ch;
+  }
+
+  .summary-strip {
+    display: flex;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow-x: auto;
+  }
+
+  .stat {
+    flex: 1 1 0;
+    min-width: 140px;
+    padding: 16px 20px;
+    border-left: 1px solid var(--line);
+  }
+  .stat:first-child { border-left: none; }
+
+  .stat .label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  .stat .value {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .stat .value.critical { color: var(--critical); }
+  .stat .value.good { color: var(--good); }
+
+  .panels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  @media (max-width: 860px) {
+    .panels { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--panel-accent);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    opacity: 0;
+    transform: translateY(8px);
+    animation: rise 0.5s ease forwards;
+  }
+  .panel:nth-child(1) { animation-delay: 0.02s; }
+  .panel:nth-child(2) { animation-delay: 0.1s; }
+  .panel:nth-child(3) { animation-delay: 0.18s; }
+
+  @keyframes rise {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .panel { animation: none; opacity: 1; transform: none; }
+  }
+
+  #habits-panel { --panel-accent: var(--accent-habits); }
+  #health-panel { --panel-accent: var(--accent-health); }
+  #finance-panel { --panel-accent: var(--accent-finance); }
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--panel-accent);
+  }
+
+  .panel-title .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--panel-accent);
+    flex-shrink: 0;
+  }
+
+  ul.rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    font-size: 14px;
+  }
+
+  .row label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: var(--ink);
+    min-width: 0;
+  }
+
+  .row label span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row.done label span {
+    color: var(--text-dim);
+    text-decoration: line-through;
+  }
+
+  input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--panel-accent, var(--ink));
+    flex-shrink: 0;
+  }
+
+  .streak {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent-habits);
+    white-space: nowrap;
+  }
+
+  .remove-btn {
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .remove-btn:hover { color: var(--critical); }
+  .remove-btn:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--panel-accent, var(--ink));
+    outline-offset: 1px;
+  }
+
+  .add-row {
+    display: flex;
+    gap: 6px;
+  }
+
+  input[type="text"], input[type="number"] {
+    font-family: inherit;
+    font-size: 13px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 7px 10px;
+    min-width: 0;
+  }
+
+  .add-row input[type="text"] { flex: 1; }
+  .add-row input[type="number"] { width: 72px; }
+
+  .add-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--panel-accent);
+    cursor: pointer;
+  }
+  .add-btn:hover { filter: brightness(1.08); }
+
+  .empty-note {
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 6px 2px;
+  }
+
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .vital {
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .vital .vlabel {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .vital .vinput {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+  }
+
+  .vital input[type="number"] {
+    width: 100%;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-weight: 600;
+    font-size: 16px;
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--ink);
+  }
+
+  .vital .unit {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .step-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--line);
+    overflow: hidden;
+    margin-top: 2px;
+  }
+  .step-bar > div {
+    height: 100%;
+    background: var(--accent-health);
+    border-radius: 3px;
+    transition: width 0.25s ease;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--ink);
+  }
+
+  .switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+  .switch input {
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+  }
+  .switch .track {
+    position: absolute;
+    inset: 0;
+    background: var(--line);
+    border-radius: 999px;
+    transition: background 0.15s ease;
+    pointer-events: none;
+  }
+  .switch .thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--surface);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    transition: transform 0.15s ease;
+    pointer-events: none;
+  }
+  .switch input:checked ~ .track { background: var(--accent-health); }
+  .switch input:checked ~ .thumb { transform: translateX(16px); }
+  .switch input:focus-visible ~ .track { outline: 2px solid var(--accent-health); outline-offset: 2px; }
+
+  .budget-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .budget-line input[type="number"] {
+    width: 84px;
+    text-align: right;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  .budget-bar {
+    height: 7px;
+    border-radius: 4px;
+    background: var(--line);
+    overflow: hidden;
+  }
+  .budget-bar > div {
+    height: 100%;
+    border-radius: 4px;
+    background: var(--accent-finance);
+    transition: width 0.25s ease, background 0.25s ease;
+  }
+  .budget-bar > div.over { background: var(--critical); }
+
+  .budget-caption {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .budget-caption.over { color: var(--critical); }
+
+  .amount {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    padding-top: 8px;
+  }
+</style>
+
+<div class="page">
+  <header>
+    <span class="eyebrow">Today's entry</span>
+    <h1 id="today-heading">Daybook</h1>
+    <p>Habits, health, and spending — one page, kept privately in this browser.</p>
+  </header>
+
+  <div class="summary-strip" id="summary-strip"></div>
+
+  <div class="panels">
+    <section class="panel" id="habits-panel">
+      <div class="panel-title"><span class="dot"></span>Habits</div>
+      <ul class="rows" id="habits-list"></ul>
+      <div class="add-row">
+        <input type="text" id="habit-input" placeholder="New habit" maxlength="60">
+        <button class="add-btn" id="habit-add-btn">Add</button>
+      </div>
+    </section>
+
+    <section class="panel" id="health-panel">
+      <div class="panel-title"><span class="dot"></span>Vitals</div>
+      <div class="vitals-grid">
+        <div class="vital">
+          <span class="vlabel">Sleep</span>
+          <div class="vinput"><input type="number" id="sleep-input" step="0.5" min="0" max="16"><span class="unit">hrs</span></div>
+        </div>
+        <div class="vital">
+          <span class="vlabel">Water</span>
+          <div class="vinput"><input type="number" id="water-input" step="1" min="0"><span class="unit">glasses</span></div>
+        </div>
+        <div class="vital" style="grid-column: 1 / -1;">
+          <span class="vlabel">Steps <span id="steps-goal-note" style="color:var(--text-dim);"></span></span>
+          <div class="vinput"><input type="number" id="steps-input" step="100" min="0"><span class="unit">steps</span></div>
+          <div class="step-bar"><div id="steps-fill"></div></div>
+        </div>
+      </div>
+      <label class="toggle-row" for="workout-input">
+        Worked out today
+        <span class="switch">
+          <input type="checkbox" id="workout-input">
+          <span class="track"></span>
+          <span class="thumb"></span>
+        </span>
+      </label>
+    </section>
+
+    <section class="panel" id="finance-panel">
+      <div class="panel-title"><span class="dot"></span>Ledger</div>
+      <div class="budget-line">
+        <span>Monthly budget</span>
+        <input type="number" id="budget-input" step="50" min="0">
+      </div>
+      <div class="budget-bar"><div id="budget-fill"></div></div>
+      <div class="budget-caption" id="budget-caption"></div>
+      <ul class="rows" id="expense-list"></ul>
+      <div class="add-row">
+        <input type="text" id="expense-label-input" placeholder="Expense" maxlength="40">
+        <input type="number" id="expense-amount-input" placeholder="$" step="0.01" min="0">
+        <button class="add-btn" id="expense-add-btn">Add</button>
+      </div>
+    </section>
+  </div>
+
+  <footer>Kept locally in this browser — nothing leaves this page.</footer>
+</div>
+
+<script>
+  const STORE_KEY = 'daybook-state-v1';
+
+  const defaultState = {
+    habits: [
+      { id: 'h1', name: 'Morning walk', streak: 5, done: true },
+      { id: 'h2', name: 'No phone after 10pm', streak: 2, done: false },
+      { id: 'h3', name: 'Read 20 minutes', streak: 12, done: true },
+    ],
+    health: { sleep: 7.5, water: 5, steps: 6200, workout: true },
+    finance: {
+      budget: 2200,
+      expenses: [
+        { id: 'e1', label: 'Groceries', amount: 86.4 },
+        { id: 'e2', label: 'Gym membership', amount: 45 },
+        { id: 'e3', label: 'Coffee', amount: 12.5 },
+      ],
+    },
+  };
+
+  function loadState() {
+    try {
+      const raw = window.localStorage.getItem(STORE_KEY);
+      if (!raw) return structuredClone(defaultState);
+      const parsed = JSON.parse(raw);
+      return {
+        habits: parsed.habits ?? defaultState.habits,
+        health: { ...defaultState.health, ...parsed.health },
+        finance: {
+          budget: parsed.finance?.budget ?? defaultState.finance.budget,
+          expenses: parsed.finance?.expenses ?? defaultState.finance.expenses,
+        },
+      };
+    } catch {
+      return structuredClone(defaultState);
+    }
+  }
+
+  let state = loadState();
+
+  function save() {
+    try {
+      window.localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    } catch {
+      // storage unavailable — continue rendering in-memory only
+    }
+    renderAll();
+  }
+
+  function fmtMoney(n) {
+    return '$' + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function renderHeading() {
+    const today = new Date().toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('today-heading').textContent = today;
+  }
+
+  function renderSummary() {
+    const combinedStreak = state.habits.reduce((sum, h) => sum + h.streak, 0);
+    const spent = state.finance.expenses.reduce((sum, e) => sum + e.amount, 0);
+    const remaining = state.finance.budget - spent;
+    const strip = document.getElementById('summary-strip');
+    strip.innerHTML = `
+      <div class="stat">
+        <div class="label">Combined streak</div>
+        <div class="value">${combinedStreak}<span style="font-size:14px;color:var(--text-dim);"> days</span></div>
+      </div>
+      <div class="stat">
+        <div class="label">Last night's sleep</div>
+        <div class="value">${state.health.sleep}<span style="font-size:14px;color:var(--text-dim);"> hrs</span></div>
+      </div>
+      <div class="stat">
+        <div class="label">Budget remaining</div>
+        <div class="value ${remaining < 0 ? 'critical' : 'good'}">${fmtMoney(remaining)}</div>
+      </div>
+    `;
+  }
+
+  function renderHabits() {
+    const list = document.getElementById('habits-list');
+    list.innerHTML = '';
+    if (state.habits.length === 0) {
+      list.innerHTML = '<li class="empty-note">No habits yet — add one below.</li>';
+    }
+    state.habits.forEach((h) => {
+      const li = document.createElement('li');
+      li.className = 'row' + (h.done ? ' done' : '');
+      li.innerHTML = `
+        <label>
+          <input type="checkbox" data-toggle="${h.id}" ${h.done ? 'checked' : ''}>
+          <span>${h.name}</span>
+        </label>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="streak">${h.streak}d</span>
+          <button class="remove-btn" data-remove="${h.id}" aria-label="Remove ${h.name}">✕</button>
+        </span>
+      `;
+      list.appendChild(li);
+    });
+    list.querySelectorAll('[data-toggle]').forEach((el) =>
+      el.addEventListener('change', () => {
+        const h = state.habits.find((x) => x.id === el.dataset.toggle);
+        h.done = !h.done;
+        h.streak = Math.max(0, h.streak + (h.done ? 1 : -1));
+        save();
+      })
+    );
+    list.querySelectorAll('[data-remove]').forEach((el) =>
+      el.addEventListener('click', () => {
+        state.habits = state.habits.filter((x) => x.id !== el.dataset.remove);
+        save();
+      })
+    );
+  }
+
+  function renderHealth() {
+    document.getElementById('sleep-input').value = state.health.sleep;
+    document.getElementById('water-input').value = state.health.water;
+    document.getElementById('steps-input').value = state.health.steps;
+    document.getElementById('workout-input').checked = state.health.workout;
+    const goal = 8000;
+    document.getElementById('steps-goal-note').textContent = `of ${goal.toLocaleString()} goal`;
+    document.getElementById('steps-fill').style.width = Math.min(100, (state.health.steps / goal) * 100) + '%';
+  }
+
+  function renderFinance() {
+    const budgetInput = document.getElementById('budget-input');
+    if (document.activeElement !== budgetInput) budgetInput.value = state.finance.budget;
+    const spent = state.finance.expenses.reduce((sum, e) => sum + e.amount, 0);
+    const remaining = state.finance.budget - spent;
+    const pct = state.finance.budget > 0 ? Math.min(100, (spent / state.finance.budget) * 100) : 0;
+    const fill = document.getElementById('budget-fill');
+    fill.style.width = pct + '%';
+    fill.classList.toggle('over', remaining < 0);
+    const caption = document.getElementById('budget-caption');
+    caption.textContent = `${fmtMoney(spent)} spent · ${fmtMoney(Math.abs(remaining))} ${remaining < 0 ? 'over' : 'left'}`;
+    caption.classList.toggle('over', remaining < 0);
+
+    const list = document.getElementById('expense-list');
+    list.innerHTML = '';
+    if (state.finance.expenses.length === 0) {
+      list.innerHTML = '<li class="empty-note">No expenses logged yet.</li>';
+    }
+    state.finance.expenses.forEach((e) => {
+      const li = document.createElement('li');
+      li.className = 'row';
+      li.innerHTML = `
+        <label><span>${e.label}</span></label>
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="amount">${fmtMoney(e.amount)}</span>
+          <button class="remove-btn" data-remove-expense="${e.id}" aria-label="Remove ${e.label}">✕</button>
+        </span>
+      `;
+      list.appendChild(li);
+    });
+    list.querySelectorAll('[data-remove-expense]').forEach((el) =>
+      el.addEventListener('click', () => {
+        state.finance.expenses = state.finance.expenses.filter((x) => x.id !== el.dataset.removeExpense);
+        save();
+      })
+    );
+  }
+
+  function renderAll() {
+    renderSummary();
+    renderHabits();
+    renderHealth();
+    renderFinance();
+  }
+
+  document.getElementById('habit-add-btn').addEventListener('click', addHabit);
+  document.getElementById('habit-input').addEventListener('keydown', (e) => e.key === 'Enter' && addHabit());
+  function addHabit() {
+    const input = document.getElementById('habit-input');
+    const name = input.value.trim();
+    if (!name) return;
+    state.habits.push({ id: 'h' + Date.now(), name, streak: 0, done: false });
+    input.value = '';
+    save();
+  }
+
+  document.getElementById('sleep-input').addEventListener('input', (e) => { state.health.sleep = Number(e.target.value); save(); });
+  document.getElementById('water-input').addEventListener('input', (e) => { state.health.water = Number(e.target.value); save(); });
+  document.getElementById('steps-input').addEventListener('input', (e) => { state.health.steps = Number(e.target.value); save(); });
+  document.getElementById('workout-input').addEventListener('change', (e) => { state.health.workout = e.target.checked; save(); });
+
+  document.getElementById('budget-input').addEventListener('input', (e) => { state.finance.budget = Number(e.target.value); save(); });
+  document.getElementById('expense-add-btn').addEventListener('click', addExpense);
+  document.getElementById('expense-amount-input').addEventListener('keydown', (e) => e.key === 'Enter' && addExpense());
+  document.getElementById('expense-label-input').addEventListener('keydown', (e) => e.key === 'Enter' && addExpense());
+  function addExpense() {
+    const labelInput = document.getElementById('expense-label-input');
+    const amountInput = document.getElementById('expense-amount-input');
+    const label = labelInput.value.trim();
+    const amount = Number(amountInput.value);
+    if (!label || !amount) return;
+    state.finance.expenses.push({ id: 'e' + Date.now(), label, amount });
+    labelInput.value = '';
+    amountInput.value = '';
+    save();
+  }
+
+  renderHeading();
+  renderAll();
+</script>
