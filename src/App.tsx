@@ -12,14 +12,30 @@ import { CommunityCard } from './components/CommunityCard'
 import { QuickEntry } from './components/QuickEntry'
 import { SettingsPanel } from './components/SettingsPanel'
 import { supabase } from './lib/supabaseClient'
+import { getErrorMessage } from './lib/errors'
 
 function Dashboard({ userId }: { userId: string }) {
   const [showSettings, setShowSettings] = useState(false)
+  const [actionError, setActionError] = useState('')
   const { habits, addHabit, removeHabit, toggleHabit, reload: reloadHabits } = useHabits(userId)
   const { vitals, setVitals, reload: reloadVitals } = useVitals(userId)
   const { monthlyBudget, expenses, setBudget, addExpense, removeExpense, reload: reloadFinance } =
     useFinance(userId)
   const { profile, updateDisplayName, uploadAvatar } = useProfile(userId)
+
+  // Wraps a fire-and-forget action so a thrown Supabase error shows up as a
+  // visible banner instead of silently doing nothing (or logging an unhandled
+  // rejection no one sees).
+  function wrap<A extends unknown[]>(fn: (...args: A) => Promise<void>) {
+    return async (...args: A) => {
+      try {
+        await fn(...args)
+        setActionError('')
+      } catch (err) {
+        setActionError(getErrorMessage(err, 'Something went wrong saving that.'))
+      }
+    }
+  }
 
   const today = new Date().toLocaleDateString(undefined, {
     weekday: 'long',
@@ -67,15 +83,26 @@ function Dashboard({ userId }: { userId: string }) {
 
         <QuickEntry onApplied={refreshAllAfterQuickEntry} />
 
+        {actionError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+            {actionError}
+          </div>
+        )}
+
         <main className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          <HabitsCard habits={habits} onToggle={toggleHabit} onAdd={addHabit} onRemove={removeHabit} />
-          <HealthCard log={vitals} onChange={setVitals} />
+          <HabitsCard
+            habits={habits}
+            onToggle={wrap(toggleHabit)}
+            onAdd={wrap(addHabit)}
+            onRemove={wrap(removeHabit)}
+          />
+          <HealthCard log={vitals} onChange={wrap(setVitals)} />
           <FinanceCard
             monthlyBudget={monthlyBudget}
             expenses={expenses}
-            onBudgetChange={setBudget}
-            onAddExpense={addExpense}
-            onRemoveExpense={removeExpense}
+            onBudgetChange={wrap(setBudget)}
+            onAddExpense={wrap(addExpense)}
+            onRemoveExpense={wrap(removeExpense)}
           />
         </main>
 

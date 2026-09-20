@@ -24,7 +24,8 @@ export function useProfile(userId: string) {
   }, [reload])
 
   async function updateDisplayName(name: string) {
-    await supabase.from('profiles').update({ display_name: name.trim() }).eq('id', userId)
+    const { error } = await supabase.from('profiles').update({ display_name: name.trim() }).eq('id', userId)
+    if (error) throw error
     await reload()
   }
 
@@ -54,7 +55,8 @@ export function useProfile(userId: string) {
     // Cache-bust so the new image shows immediately instead of a stale cached copy at the same URL.
     const url = `${pub.publicUrl}?v=${Date.now()}`
 
-    await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId)
+    const { error: profileError } = await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId)
+    if (profileError) throw profileError
     await reload()
   }
 

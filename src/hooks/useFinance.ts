@@ -35,25 +35,28 @@ export function useFinance(userId: string) {
 
   async function setBudget(amount: number) {
     setMonthlyBudgetState(amount)
-    await supabase
+    const { error } = await supabase
       .from('budgets')
       .upsert({ user_id: userId, month: monthKey(), monthly_budget: amount }, { onConflict: 'user_id,month' })
+    if (error) throw error
   }
 
   async function addExpense(label: string, amount: number) {
     const trimmed = label.trim()
     if (!trimmed || !amount) return
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('expenses')
       .insert({ user_id: userId, log_date: todayStr(), label: trimmed, amount, category: 'general' })
       .select('id, label, amount, category')
       .single()
+    if (error) throw error
     if (data) setExpenses((prev) => [data, ...prev])
   }
 
   async function removeExpense(id: string) {
     setExpenses((prev) => prev.filter((e) => e.id !== id))
-    await supabase.from('expenses').delete().eq('id', id)
+    const { error } = await supabase.from('expenses').delete().eq('id', id)
+    if (error) throw error
   }
 
   return { monthlyBudget, expenses, loading, setBudget, addExpense, removeExpense, reload }

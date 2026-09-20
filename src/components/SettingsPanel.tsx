@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { getErrorMessage } from '../lib/errors'
 import type { Profile } from '../hooks/useProfile'
 
 export function SettingsPanel({
@@ -17,6 +18,7 @@ export function SettingsPanel({
   const [uploading, setUploading] = useState(false)
   const [avatarError, setAvatarError] = useState('')
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
+  const [nameError, setNameError] = useState('')
   const [anthropicKey, setAnthropicKey] = useState('')
   const [keyStatus, setKeyStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [hasKey, setHasKey] = useState<boolean | null>(null)
@@ -33,7 +35,7 @@ export function SettingsPanel({
     try {
       await onUploadAvatar(file)
     } catch (err) {
-      setAvatarError(err instanceof Error ? err.message : 'Could not upload that image.')
+      setAvatarError(getErrorMessage(err, 'Could not upload that image.'))
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -107,12 +109,18 @@ export function SettingsPanel({
                 className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-800"
               />
               <button
-                onClick={() => onUpdateDisplayName(displayName)}
+                onClick={() => {
+                  setNameError('')
+                  onUpdateDisplayName(displayName).catch((err) =>
+                    setNameError(getErrorMessage(err, 'Could not save display name.')),
+                  )
+                }}
                 className="rounded-lg bg-violet-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-600"
               >
                 Save
               </button>
             </div>
+            {nameError && <p className="mt-2 text-xs text-red-500">{nameError}</p>}
           </div>
 
           <div>

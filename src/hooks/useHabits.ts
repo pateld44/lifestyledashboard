@@ -50,12 +50,14 @@ export function useHabits(userId: string) {
   async function addHabit(name: string) {
     const trimmed = name.trim()
     if (!trimmed) return
-    await supabase.from('habits').insert({ user_id: userId, name: trimmed })
+    const { error } = await supabase.from('habits').insert({ user_id: userId, name: trimmed })
+    if (error) throw error
     await reload()
   }
 
   async function removeHabit(id: string) {
-    await supabase.from('habits').delete().eq('id', id)
+    const { error } = await supabase.from('habits').delete().eq('id', id)
+    if (error) throw error
     await reload()
   }
 
@@ -64,13 +66,12 @@ export function useHabits(userId: string) {
     if (!habit) return
     const today = todayStr()
 
-    if (habit.doneToday) {
-      await supabase.from('habit_logs').delete().eq('habit_id', id).eq('log_date', today)
-    } else {
-      await supabase
-        .from('habit_logs')
-        .upsert({ habit_id: id, user_id: userId, log_date: today, done: true }, { onConflict: 'habit_id,log_date' })
-    }
+    const { error } = habit.doneToday
+      ? await supabase.from('habit_logs').delete().eq('habit_id', id).eq('log_date', today)
+      : await supabase
+          .from('habit_logs')
+          .upsert({ habit_id: id, user_id: userId, log_date: today, done: true }, { onConflict: 'habit_id,log_date' })
+    if (error) throw error
     await reload()
   }
 

@@ -130,11 +130,13 @@ owner's.
 ### Success criteria (Phase 2)
 
 - [x] User can sign up, log in, and log out; dashboard data is scoped to their
-      account and no one else's. *(magic-link auth via Supabase; code written,
-      untested against a live project)*
+      account and no one else's. *(email+password auth via Supabase; switched
+      from magic-link after hitting Supabase's default email rate limit during
+      testing — see Open Questions)*
 - [x] Habits, vitals, and ledger data persists as dated history (not a single
       overwritten record) and follows the signed-in user across devices/browsers.
-      *(code written, untested against a live project)*
+      *(migrations applied to a live project; end-to-end login still being
+      verified)*
 - [x] Habit streaks are computed from actual day-over-day completion history,
       rather than a manual increment/decrement counter.
 - [ ] User can add, remove, and reorder widgets on their dashboard. *(not yet
@@ -261,7 +263,12 @@ backend:
 
 ### Open questions
 
-- ~~Auth method~~ — resolved: magic link (`supabase.auth.signInWithOtp`).
+- ~~Auth method~~ — started with magic link (`signInWithOtp`), switched to
+  email+password (`signInWithPassword`/`signUp`) after hitting Supabase's
+  default email rate limit (a handful of emails/hour on a fresh project) during
+  testing. Requires "Confirm email" disabled in Auth settings so `signUp`
+  doesn't also try to send an email. Revisit if a custom SMTP provider gets
+  configured later — magic link is arguably nicer UX once email isn't rate-limited.
 - ~~Where/how is the per-user Anthropic key encrypted at rest~~ — resolved:
   Supabase Vault (`vault.create_secret`/`update_secret`/`decrypted_secrets`),
   readable only by `service_role` via a dedicated Postgres function.
@@ -325,17 +332,21 @@ on load (`supabaseClient.ts` requires `VITE_SUPABASE_URL` /
    ```
    Add each friend you want on the platform the same way.
 5. **Deploy the Edge Function.** Quick-entry needs to run server-side (it's
-   what keeps Anthropic keys out of the browser). With the Supabase CLI linked:
-   ```
-   supabase functions deploy quick-entry
-   ```
-   No extra secrets to set — `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and
-   `SUPABASE_SERVICE_ROLE_KEY` are injected automatically for every Edge
-   Function, and the Anthropic key itself is per-user (stored via Vault, not a
-   platform-wide secret).
-6. **Sign in.** `npm run dev`, open `/app.html`, enter your allowlisted email,
-   and use the magic link sent to your inbox.
-7. **(Optional) Add your Anthropic key.** In the app's Settings panel, to
+   what keeps Anthropic keys out of the browser). Either with the CLI linked
+   (`supabase functions deploy quick-entry`) or by pasting
+   `supabase/functions/quick-entry/index.ts` into the dashboard's Edge
+   Functions → Deploy a new function UI. No extra secrets to set —
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are
+   injected automatically for every Edge Function, and the Anthropic key
+   itself is per-user (stored via Vault, not a platform-wide secret).
+6. **Disable email confirmation.** *Authentication → Sign In / Providers →
+   Email* → turn off "Confirm email". Auth is email+password (not magic
+   link — see Open Questions), and without this toggle `signUp` still tries
+   to send a confirmation email and hits the same rate limit.
+7. **Sign in.** `npm run dev`, open `/app.html`, enter your allowlisted email
+   and any password, and click "Create account" (or "Sign in" if the account
+   already exists).
+8. **(Optional) Add your Anthropic key.** In the app's Settings panel, to
    enable Quick Entry. Get one at [console.anthropic.com](https://console.anthropic.com).
 
 ## Links

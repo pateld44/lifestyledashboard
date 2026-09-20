@@ -36,7 +36,7 @@ export function useVitals(userId: string) {
 
   async function setVitals(log: HealthLog) {
     setVitalsState(log)
-    await supabase.from('vitals_logs').upsert(
+    const { error } = await supabase.from('vitals_logs').upsert(
       {
         user_id: userId,
         log_date: todayStr(),
@@ -48,6 +48,7 @@ export function useVitals(userId: string) {
       },
       { onConflict: 'user_id,log_date' },
     )
+    if (error) throw error
   }
 
   return { vitals, loading, setVitals, reload }
