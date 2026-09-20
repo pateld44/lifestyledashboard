@@ -4,39 +4,22 @@ import type { Habit } from '../types'
 
 export function HabitsCard({
   habits,
-  onChange,
+  onToggle,
+  onAdd,
+  onRemove,
 }: {
   habits: Habit[]
-  onChange: (habits: Habit[]) => void
+  onToggle: (id: string) => void
+  onAdd: (name: string) => void
+  onRemove: (id: string) => void
 }) {
   const [newHabit, setNewHabit] = useState('')
 
-  function toggle(id: string) {
-    onChange(
-      habits.map((h) =>
-        h.id === id
-          ? {
-              ...h,
-              doneToday: !h.doneToday,
-              streak: h.doneToday ? Math.max(0, h.streak - 1) : h.streak + 1,
-            }
-          : h,
-      ),
-    )
-  }
-
-  function addHabit() {
+  function handleAdd() {
     const name = newHabit.trim()
     if (!name) return
-    onChange([
-      ...habits,
-      { id: crypto.randomUUID(), name, streak: 0, doneToday: false },
-    ])
+    onAdd(name)
     setNewHabit('')
-  }
-
-  function removeHabit(id: string) {
-    onChange(habits.filter((h) => h.id !== id))
   }
 
   return (
@@ -51,7 +34,7 @@ export function HabitsCard({
               <input
                 type="checkbox"
                 checked={h.doneToday}
-                onChange={() => toggle(h.id)}
+                onChange={() => onToggle(h.id)}
                 className="h-4 w-4 accent-violet-500"
               />
               {h.name}
@@ -61,7 +44,7 @@ export function HabitsCard({
                 🔥 {h.streak}
               </span>
               <button
-                onClick={() => removeHabit(h.id)}
+                onClick={() => onRemove(h.id)}
                 aria-label={`Remove ${h.name}`}
                 className="text-xs text-slate-400 hover:text-red-500"
               >
@@ -78,12 +61,12 @@ export function HabitsCard({
         <input
           value={newHabit}
           onChange={(e) => setNewHabit(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addHabit()}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           placeholder="New habit"
           className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-800"
         />
         <button
-          onClick={addHabit}
+          onClick={handleAdd}
           className="rounded-lg bg-violet-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-violet-600"
         >
           Add

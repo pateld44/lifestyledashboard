@@ -1,37 +1,33 @@
 import { useState } from 'react'
 import { Card } from './Card'
-import type { FinanceState } from '../types'
+import type { Expense } from '../types'
 
 export function FinanceCard({
-  finance,
-  onChange,
+  monthlyBudget,
+  expenses,
+  onBudgetChange,
+  onAddExpense,
+  onRemoveExpense,
 }: {
-  finance: FinanceState
-  onChange: (finance: FinanceState) => void
+  monthlyBudget: number
+  expenses: Expense[]
+  onBudgetChange: (amount: number) => void
+  onAddExpense: (label: string, amount: number) => void
+  onRemoveExpense: (id: string) => void
 }) {
   const [label, setLabel] = useState('')
   const [amount, setAmount] = useState('')
 
-  const spent = finance.expenses.reduce((sum, e) => sum + e.amount, 0)
-  const remaining = finance.monthlyBudget - spent
-  const pct = finance.monthlyBudget > 0 ? Math.min(100, (spent / finance.monthlyBudget) * 100) : 0
+  const spent = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const remaining = monthlyBudget - spent
+  const pct = monthlyBudget > 0 ? Math.min(100, (spent / monthlyBudget) * 100) : 0
 
-  function addExpense() {
+  function handleAdd() {
     const value = Number(amount)
     if (!label.trim() || !value) return
-    onChange({
-      ...finance,
-      expenses: [
-        ...finance.expenses,
-        { id: crypto.randomUUID(), label: label.trim(), amount: value, category: 'general' },
-      ],
-    })
+    onAddExpense(label.trim(), value)
     setLabel('')
     setAmount('')
-  }
-
-  function removeExpense(id: string) {
-    onChange({ ...finance, expenses: finance.expenses.filter((e) => e.id !== id) })
   }
 
   return (
@@ -40,8 +36,8 @@ export function FinanceCard({
         <span className="text-slate-500 dark:text-slate-400">Monthly budget</span>
         <input
           type="number"
-          value={finance.monthlyBudget}
-          onChange={(e) => onChange({ ...finance, monthlyBudget: Number(e.target.value) })}
+          value={monthlyBudget}
+          onChange={(e) => onBudgetChange(Number(e.target.value))}
           className="w-24 rounded-md border border-slate-200 bg-transparent px-2 py-1 text-right outline-none focus:border-amber-400 dark:border-slate-700"
         />
       </div>
@@ -60,7 +56,7 @@ export function FinanceCard({
       </div>
 
       <ul className="flex max-h-40 flex-col gap-1 overflow-y-auto">
-        {finance.expenses.map((e) => (
+        {expenses.map((e) => (
           <li
             key={e.id}
             className="flex items-center justify-between rounded-lg border border-slate-100 px-3 py-1.5 text-sm dark:border-slate-800"
@@ -71,7 +67,7 @@ export function FinanceCard({
                 ${e.amount.toFixed(2)}
               </span>
               <button
-                onClick={() => removeExpense(e.id)}
+                onClick={() => onRemoveExpense(e.id)}
                 aria-label={`Remove ${e.label}`}
                 className="text-xs text-slate-400 hover:text-red-500"
               >
@@ -80,7 +76,7 @@ export function FinanceCard({
             </div>
           </li>
         ))}
-        {finance.expenses.length === 0 && (
+        {expenses.length === 0 && (
           <p className="text-sm text-slate-400">No expenses logged yet.</p>
         )}
       </ul>
@@ -95,13 +91,13 @@ export function FinanceCard({
         <input
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addExpense()}
+          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           type="number"
           placeholder="$"
           className="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-amber-400 dark:border-slate-700 dark:bg-slate-800"
         />
         <button
-          onClick={addExpense}
+          onClick={handleAdd}
           className="rounded-lg bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
         >
           Add
