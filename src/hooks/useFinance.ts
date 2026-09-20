@@ -41,12 +41,12 @@ export function useFinance(userId: string) {
     if (error) throw error
   }
 
-  async function addExpense(label: string, amount: number) {
+  async function addExpense(label: string, amount: number, category = 'general') {
     const trimmed = label.trim()
     if (!trimmed || !amount) return
     const { data, error } = await supabase
       .from('expenses')
-      .insert({ user_id: userId, log_date: todayStr(), label: trimmed, amount, category: 'general' })
+      .insert({ user_id: userId, log_date: todayStr(), label: trimmed, amount, category })
       .select('id, label, amount, category')
       .single()
     if (error) throw error

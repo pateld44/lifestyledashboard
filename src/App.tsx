@@ -11,12 +11,14 @@ import { FinanceCard } from './components/FinanceCard'
 import { CommunityCard } from './components/CommunityCard'
 import { QuickEntry } from './components/QuickEntry'
 import { SettingsPanel } from './components/SettingsPanel'
+import { HistoryView } from './components/HistoryView'
 import { supabase } from './lib/supabaseClient'
 import { getErrorMessage } from './lib/errors'
 
 function Dashboard({ userId }: { userId: string }) {
   const [showSettings, setShowSettings] = useState(false)
   const [actionError, setActionError] = useState('')
+  const [tab, setTab] = useState<'today' | 'history'>('today')
   const { habits, addHabit, removeHabit, toggleHabit, reload: reloadHabits } = useHabits(userId)
   const { vitals, setVitals, reload: reloadVitals } = useVitals(userId)
   const { monthlyBudget, expenses, setBudget, addExpense, removeExpense, reload: reloadFinance } =
@@ -81,7 +83,21 @@ function Dashboard({ userId }: { userId: string }) {
           </div>
         </header>
 
-        <QuickEntry onApplied={refreshAllAfterQuickEntry} />
+        <nav className="flex gap-1 self-start rounded-full border border-slate-200 p-1 dark:border-slate-800">
+          {(['today', 'history'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize ${
+                tab === t
+                  ? 'bg-violet-500 text-white'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </nav>
 
         {actionError && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
@@ -89,28 +105,36 @@ function Dashboard({ userId }: { userId: string }) {
           </div>
         )}
 
-        <main className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          <HabitsCard
-            habits={habits}
-            onToggle={wrap(toggleHabit)}
-            onAdd={wrap(addHabit)}
-            onRemove={wrap(removeHabit)}
-          />
-          <HealthCard log={vitals} onChange={wrap(setVitals)} />
-          <FinanceCard
-            monthlyBudget={monthlyBudget}
-            expenses={expenses}
-            onBudgetChange={wrap(setBudget)}
-            onAddExpense={wrap(addExpense)}
-            onRemoveExpense={wrap(removeExpense)}
-          />
-        </main>
+        {tab === 'today' ? (
+          <>
+            <QuickEntry onApplied={refreshAllAfterQuickEntry} />
 
-        <CommunityCard currentUserId={userId} />
+            <main className="grid grid-cols-1 gap-5 md:grid-cols-3">
+              <HabitsCard
+                habits={habits}
+                onToggle={wrap(toggleHabit)}
+                onAdd={wrap(addHabit)}
+                onRemove={wrap(removeHabit)}
+              />
+              <HealthCard log={vitals} onChange={wrap(setVitals)} />
+              <FinanceCard
+                monthlyBudget={monthlyBudget}
+                expenses={expenses}
+                onBudgetChange={wrap(setBudget)}
+                onAddExpense={wrap(addExpense)}
+                onRemoveExpense={wrap(removeExpense)}
+              />
+            </main>
 
-        <footer className="pt-4 text-center text-xs text-slate-400">
-          Habits and vitals are visible to other invited users. Your budget and expenses stay private.
-        </footer>
+            <CommunityCard currentUserId={userId} />
+
+            <footer className="pt-4 text-center text-xs text-slate-400">
+              Habits and vitals are visible to other invited users. Your budget and expenses stay private.
+            </footer>
+          </>
+        ) : (
+          <HistoryView userId={userId} />
+        )}
       </div>
 
       {showSettings && (

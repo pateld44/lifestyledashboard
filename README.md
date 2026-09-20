@@ -3,7 +3,8 @@
 **Status:** Phase 1 shipped. Phase 2 shipped and verified end-to-end against
 a live Supabase project (accounts, dated history, AI quick-entry) — widget
 framework and goal tracking remain deferred within it. Phase 3 (Connections:
-cross-user habit/vitals visibility, avatars) also shipped and verified live.
+cross-user habit/vitals visibility, avatars) and Phase 4 (History & trends:
+vitals line charts, spending-by-category donut chart) also shipped.
 See [Setting up Supabase](#setting-up-supabase-required-before-phase-2-works)
 to stand up your own instance.
 **Owner:** pateld44
@@ -366,13 +367,93 @@ validation is just fast feedback).
   "every invited user sees every other invited user"? Fine for a small
   trusted circle today; worth revisiting if the allowlist grows.
 
-## Beyond Phase 2/3 (later candidates)
+## Phase 4 (shipped): History & trends
+
+### Summary
+
+Phase 2 stored habits, vitals, and expenses as real dated history from day
+one, but nothing in the UI ever looked backward — the Health widget showed
+only today, and Finance only the current month. Phase 4 adds a second tab
+("History") with actual charts over that data: rolling 30-day trend lines
+for sleep/steps/water, a workout-frequency stat, and a spending-by-category
+donut chart for Finance.
+
+### Goals
+
+- A user can see how their vitals have trended over the last 30 days, not
+  just today's snapshot.
+- A user can see where their money actually goes by category, not just a
+  single spent-vs-budget number.
+- Charts follow a real design system (form chosen by the data's job, a
+  validated colorblind-safe palette, consistent mark/label rules) rather than
+  default library styling.
+
+### Success criteria (Phase 4)
+
+- [x] A "History" tab shows sleep, steps, and water as line charts over a
+      rolling 30-day window, and workouts as a simple frequency stat.
+- [x] A donut chart shows spending by category over the same window, with a
+      legend and center total.
+- [x] Manual expense entry now includes a category picker, so the donut
+      chart has real data to show (previously every expense defaulted to
+      "general").
+- [x] The category palette is validated colorblind-safe (adjacent CVD +
+      normal-vision floors) against both the light and dark chart surfaces,
+      not eyeballed.
+
+### Scope
+
+**In scope — Phase 4**
+- A second tab in the app (`Today` / `History`) — no new page/route.
+- `TrendLineChart`: single-series line chart (sleep, steps, water), each its
+  own small multiple; steps includes a reference line at the existing
+  8,000-step goal.
+- `CategoryDonutChart`: categorical donut chart with hover, a legend list,
+  and a center total/selection readout.
+- A fixed 7-category expense taxonomy (Food, Transport, Shopping, Bills,
+  Entertainment, Health, Other) with a validated color per category, used by
+  both the picker and the chart.
+
+**Out of scope — Phase 4 (deferred to a later phase)**
+- Habit completion history (a streak exists, but there's no visible
+  day-by-day calendar/heatmap view yet).
+- Custom date ranges — the window is a fixed rolling 30 days, no picker.
+- Editing an expense's category after the fact, or re-categorizing
+  quick-entry expenses (Claude's free-text category guess is stored as-is;
+  if it doesn't match one of the 7 fixed keys, the chart falls back to the
+  "Other" color and shows the raw text as the label).
+
+### Technical considerations
+
+- Charts are hand-rolled SVG (no charting library added) — the app's
+  dependency footprint stays Vite/React/Tailwind/Supabase only.
+- Followed the project's `dataviz` skill: form chosen per chart (line for
+  change-over-time, donut for categorical share), color assigned last, and
+  the category palette run through `validate_palette.js` against both
+  `#fcfcfb` (light) and this app's actual `#020617` dark surface before use
+  — not just the skill's generic reference surfaces.
+- `useVitalsHistory` and `useExpenseHistory` are separate hooks from the
+  live-dashboard `useVitals`/`useFinance` (different scope: rolling 30 days
+  vs. today / current month) rather than overloading the existing hooks with
+  a second mode.
+
+### Open questions
+
+- Should the 30-day window become user-configurable (7/30/90 days), or is a
+  fixed window fine for how small the dataset realistically stays for a
+  single user?
+- Should quick-entry's Claude prompt be constrained to the 7 fixed category
+  keys (via an enum in the tool schema) instead of free text, so every
+  expense reliably lands in a real category slice instead of sometimes
+  falling back to "Other"?
+
+## Beyond Phase 2/3/4 (later candidates)
 
 - Live email connection (Gmail OAuth, and later Outlook) for automatic
   goal-evidence tallying — deferred from Phase 2's manual-entry goal-tracking
   widget.
-- Trend charts over the dated history introduced in Phase 2 (streaks, sleep,
-  spending over time).
+- A habit completion heatmap/calendar (day-by-day history view, not just the
+  aggregate streak count).
 - Reminders/notifications for unlogged habits or vitals.
 - Multiple budget categories instead of one flat monthly total.
 - Reactions or light encouragement on another user's streak (Phase 3
