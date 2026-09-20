@@ -1,12 +1,13 @@
 # Lifestyle Dashboard — PRD
 
-**Status:** Phase 1 shipped. Phase 2 code written (accounts, dated history,
-cross-user habit/vitals visibility, avatars, AI quick-entry) but **not yet
-verified end-to-end** — no Supabase project is connected yet. See
-[Setting up Supabase](#setting-up-supabase-required-before-phase-2-works)
-before running the app.
+**Status:** Phase 1 shipped. Phase 2 shipped and verified end-to-end against
+a live Supabase project (accounts, dated history, AI quick-entry) — widget
+framework and goal tracking remain deferred within it. Phase 3 (Connections:
+cross-user habit/vitals visibility, avatars) also shipped and verified live.
+See [Setting up Supabase](#setting-up-supabase-required-before-phase-2-works)
+to stand up your own instance.
 **Owner:** pateld44
-**Last updated:** 2026-09-19
+**Last updated:** 2026-09-20
 
 ## Summary
 
@@ -40,10 +41,12 @@ overhead than the task deserves.
 
 ## Users
 
-Phase 1: single user (project owner). Phase 2 introduces a small, invite-only
-group of users (see `allowed_emails`) who can see each other's habit streaks
-and vitals for light accountability — still not a public or shared-household
-product; budgets and expenses remain private to each individual.
+Phase 1: single user (project owner). Phase 2 introduces real accounts
+(still effectively single-player — each user's data is their own). Phase 3
+introduces a small, invite-only group of users (see `allowed_emails`) who
+can see each other's habit streaks and vitals for light accountability —
+still not a public or shared-household product; budgets and expenses remain
+private to each individual.
 
 ## Scope
 
@@ -97,17 +100,17 @@ app and the artifact is updated and re-exported into `artifact/daybook.html`.
 - Clearing browser storage or opening a private window loses all data.
 - Single day of state at a time; no date-based history is stored.
 
-## Phase 2 (planned): Accounts, widget framework & goal tracking
+## Phase 2 (shipped, partially): Accounts, dated history & AI quick-entry
 
 ### Summary
 
 Phase 2 moves the dashboard off single-browser `localStorage` onto a real backend
 (Supabase: Postgres + Auth), so a signed-in user's data follows them across
-devices, each day is kept as history instead of overwritten, the fixed three-panel
-layout becomes an extensible widget framework, and a new goal-tracking widget lets
-users define goals and log progress toward them — optionally assisted by their own
-Claude API key so AI-powered widgets run on their own usage/billing, not the app
-owner's.
+devices and each day is kept as history instead of overwritten. It also ships
+"quick entry" — a free-text box that uses the user's own Anthropic key to turn
+a plain-language check-in into structured widget updates, so daily logging
+needs less manual form-filling. The originally-planned generic widget
+framework and goal-tracking widget are not built; see Deferred, below.
 
 ### Goals
 
@@ -132,16 +135,16 @@ owner's.
 - [x] User can sign up, log in, and log out; dashboard data is scoped to their
       account and no one else's. *(email+password auth via Supabase; switched
       from magic-link after hitting Supabase's default email rate limit during
-      testing — see Open Questions)*
+      testing — see Open Questions. Verified end-to-end against a live project.)*
 - [x] Habits, vitals, and ledger data persists as dated history (not a single
       overwritten record) and follows the signed-in user across devices/browsers.
-      *(migrations applied to a live project; end-to-end login still being
-      verified)*
+      *(verified live — this is also where a missing-`GRANT` bug was caught;
+      see Technical considerations)*
 - [x] Habit streaks are computed from actual day-over-day completion history,
       rather than a manual increment/decrement counter.
 - [ ] User can add, remove, and reorder widgets on their dashboard. *(not yet
-      built — the three original panels plus Community are still a fixed
-      layout, not a generic widget framework)*
+      built — the panels are still a fixed layout, not a generic widget
+      framework; see Deferred, below)*
 - [x] User can enter their own Anthropic API key in a settings screen; it is stored
       encrypted (Supabase Vault) and never displayed again after saving.
 - [ ] User can define one or more goals with a target and log progress entries
@@ -149,20 +152,19 @@ owner's.
       built)*
 - [x] The "Daybook" artifact is explicitly unaffected — it keeps its current
       no-login, `localStorage`-only, anyone-with-the-link behavior.
+- [x] "Quick entry": a free-text box parses a plain-language daily check-in
+      ("slept 7h, ran 5k, spent $12 on coffee") into habit completions, vitals,
+      and expenses via the user's own Anthropic key, called server-side from an
+      Edge Function. Verified live.
 
 **Added beyond the original Phase 2 scope, per a later request:**
 - [x] A public landing page (`index.html`) separate from the app (`app.html`),
       explaining the problem/solution and including two illustrative user-story
       quotes.
-- [x] Profile pictures, stored in Supabase Storage.
-- [x] Cross-user visibility: any invited user can see other invited users'
-      habit streaks and today's vitals (steps, workout) in a "Community" widget.
-      Budgets and expenses are never shared — enforced at the RLS layer, not
-      just hidden in the UI.
-- [x] "Quick entry": a free-text box parses a plain-language daily check-in
-      ("slept 7h, ran 5k, spent $12 on coffee") into habit completions, vitals,
-      and expenses via the user's own Anthropic key, called server-side from an
-      Edge Function.
+
+*(Cross-user visibility and profile pictures were also added beyond the
+original Phase 2 scope, but are substantial enough to be their own phase —
+see Phase 3, below.)*
 
 ### Scope
 
@@ -175,9 +177,6 @@ owner's.
   completion history instead of a manual counter.
 - A public landing page (`index.html`) introducing the product, separate from
   the app itself (`app.html`).
-- Profile pictures (Supabase Storage), editable from a Settings panel.
-- Cross-user visibility for habits and vitals only (a "Community" widget) —
-  budgets and expenses are never visible to other users, enforced via RLS.
 - "Quick entry": free-text daily check-ins parsed into habits/vitals/expenses
   by Claude, using the user's own Anthropic key.
 - User-managed Anthropic API key storage (encrypted at rest via Supabase Vault,
@@ -216,16 +215,6 @@ devices.
 - Phase 1's three panels (Habits, Vitals, Ledger) become the first widgets under this
   framework, unchanged in behavior.
 
-**Community**
-Any invited user can see the other invited users' habit streaks and today's
-vitals (steps, workout status) in a dedicated widget — light, passive
-accountability. Budgets and expenses are never included; this is enforced by
-RLS policies on the database, not just left out of the UI.
-
-**Profile pictures**
-Users can upload a profile picture from Settings, stored in a public Supabase
-Storage bucket scoped so only the owner can write to their own folder.
-
 **Bring-your-own Claude key**
 User enters their own Anthropic API key in a settings screen. The key is stored
 encrypted server-side (Supabase Vault) and is never returned to the browser after
@@ -260,6 +249,13 @@ backend:
 - The artifact ("Daybook") is explicitly excluded from this backend — it has no
   login and the Artifact sandbox blocks arbitrary outbound network calls, so it
   keeps its current standalone, shareable form.
+- **Found during live setup:** enabling RLS and writing policies is not
+  sufficient on its own — Postgres also requires an explicit `GRANT` of base
+  table privileges to the `authenticated` role, or every operation fails with
+  a flat "permission denied" before RLS is ever evaluated. Every Phase 2/3
+  table hit this; fixed in
+  `supabase/migrations/20260920000001_grant_authenticated_table_access.sql`.
+  Worth remembering for any future table.
 
 ### Open questions
 
@@ -275,11 +271,102 @@ backend:
 - Should widget layout (order/visibility) be stored per-user in Postgres, or is a
   local-only widget layout acceptable for now? — still open; no generic widget
   framework exists yet, so this doesn't apply until that's built.
-- New: how much of another user's data should "connect with other users" show?
-  Current answer — habit streaks and today's vitals only, never budgets or
-  expenses. Revisit if this needs to be finer-grained (e.g., opt-out per habit).
 
-## Beyond Phase 2 (later candidates)
+## Phase 3 (shipped): Connections
+
+### Summary
+
+Phase 3 turns the invite-only user base from a set of isolated single-user
+dashboards into a small connected group. Any invited user can see how the
+others are doing today — habit streaks, sleep, steps, workouts — for light,
+passive accountability, and can put a face (a profile picture) to their name.
+Budgets and expenses stay strictly private throughout: connection here means
+encouragement, not financial transparency.
+
+### Goals
+
+- A user can see which other invited users exist and how they're doing today,
+  without needing to ask them directly.
+- Identity is legible in that view — a profile picture and display name, not
+  just a list of anonymous streak counts.
+- Privacy is structurally guaranteed: nothing about a person's spending is
+  ever readable by anyone but themselves, enforced by the database itself,
+  not just left out of the UI.
+
+### Success criteria (Phase 3)
+
+- [x] Any invited user can see every other invited user's current habit
+      streaks and today's vitals in a Community widget.
+- [x] A user can upload and change their own profile picture; it appears next
+      to their name in the header, Settings, and the Community widget.
+- [x] Budgets and expenses are provably inaccessible to other users —
+      enforced via Postgres RLS policies scoped per-table, not
+      application-layer filtering that a UI bug could bypass.
+- [x] Verified end-to-end against a live Supabase project.
+
+### Scope
+
+**In scope — Phase 3**
+- Cross-user visibility for habits and vitals only, via a dedicated
+  "Community" widget (habit streaks, today's steps, workout status).
+- Profile pictures: upload/change from Settings, stored in Supabase Storage,
+  shown throughout the app.
+- A `public_profiles` view exposing only the safe columns (`id`,
+  `display_name`, `avatar_url`) to any authenticated user, while the base
+  `profiles` table (which also holds the Anthropic key reference) stays
+  locked to "own row only."
+
+**Out of scope — Phase 3 (deferred to a later phase)**
+- Any interaction between users beyond passive viewing — no comments,
+  reactions, encouragement messages, or nudges.
+- An opt-in connection model (friend requests, following) — every invited
+  user currently sees every other invited user; there's no follow/block list.
+- Any visibility into another user's finances, under any circumstance.
+- Leaderboards, rankings, or gamification beyond the raw numbers shown today.
+
+### Features
+
+**Community**
+Any invited user can see the other invited users' habit streaks and today's
+vitals (steps, workout status) in a dedicated widget — light, passive
+accountability. Budgets and expenses are never included; this is enforced by
+RLS policies on the database, not just left out of the UI.
+
+**Profile pictures**
+Users can upload a profile picture from Settings, stored in a public Supabase
+Storage bucket scoped so only the owner can write to their own folder, with
+server-side file size/type limits as the authoritative check (client-side
+validation is just fast feedback).
+
+### Technical considerations
+
+- Cross-user reads are enabled by a deliberately permissive `for select
+  using (true)` RLS policy on `habits`, `habit_logs`, and `vitals_logs`
+  only. `budgets` and `expenses` have no such policy, so there is no code
+  path — buggy or otherwise — that can read another user's financial data.
+- `profiles` itself stays locked to "own row only" (it holds
+  `anthropic_key_secret_id`, which has no reason to be visible to anyone
+  else); the `public_profiles` view exposes just the three columns the
+  Community widget actually needs. This was tightened mid-build after
+  initially taking the simpler-but-wrong path of opening up the whole
+  `profiles` table.
+- Avatar storage uses a public Supabase Storage bucket (`avatars`) with
+  folder-scoped write policies (`(storage.foldername(name))[1] =
+  auth.uid()::text`) so a user can only write inside their own folder, plus
+  bucket-level `file_size_limit` (5MB) and `allowed_mime_types` as the real
+  enforcement.
+
+### Open questions
+
+- How much of another user's data should be visible? Current answer: habit
+  streaks and today's vitals only, never budgets or expenses. Revisit if
+  this needs to be finer-grained (e.g., opting a specific habit out of
+  sharing).
+- Should connections eventually be opt-in (friend requests) instead of
+  "every invited user sees every other invited user"? Fine for a small
+  trusted circle today; worth revisiting if the allowlist grows.
+
+## Beyond Phase 2/3 (later candidates)
 
 - Live email connection (Gmail OAuth, and later Outlook) for automatic
   goal-evidence tallying — deferred from Phase 2's manual-entry goal-tracking
@@ -288,6 +375,10 @@ backend:
   spending over time).
 - Reminders/notifications for unlogged habits or vitals.
 - Multiple budget categories instead of one flat monthly total.
+- Reactions or light encouragement on another user's streak (Phase 3
+  currently supports viewing only).
+- An opt-in/friend-request connection model instead of "every invited user
+  sees every other invited user."
 
 ## Getting started (coded app)
 
@@ -320,11 +411,15 @@ on load (`supabaseClient.ts` requires `VITE_SUPABASE_URL` /
    *Project Settings → API*. Copy the **Project URL** and the **anon public**
    key into a new `.env.local` file (copy `.env.example` as a starting point).
    These are safe to expose in the browser.
-3. **Apply the migrations.** In the dashboard's *SQL Editor*, run the contents
-   of `supabase/migrations/20260913000001_auth_foundation.sql`, then
-   `supabase/migrations/20260919000001_phase2_data_sharing_and_ai_key.sql`, in
-   that order. (Or, once you've run `supabase login` and `supabase link
-   --project-ref <your-ref>` locally, `supabase db push` applies both.)
+3. **Apply the migrations, in order.** In the dashboard's *SQL Editor*, run
+   the contents of each file in `supabase/migrations/`, oldest first:
+   `20260913000001_auth_foundation.sql`,
+   `20260919000001_phase2_data_sharing_and_ai_key.sql`, then
+   `20260920000001_grant_authenticated_table_access.sql` (without this last
+   one, every widget fails with "permission denied" — RLS policies alone
+   aren't enough, see Phase 2's Technical considerations). Or, once you've run
+   `supabase login` and `supabase link --project-ref <your-ref>` locally,
+   `supabase db push` applies all three.
 4. **Add yourself to the allowlist.** This app is invite-only — signup fails
    for any email not in `allowed_emails`. In the SQL Editor:
    ```sql
