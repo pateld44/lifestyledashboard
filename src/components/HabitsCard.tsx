@@ -63,6 +63,7 @@ export function HabitsCard({
           onChange={(e) => setNewHabit(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           placeholder="New habit"
+          maxLength={200}
           className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-800"
         />
         <button

@@ -56,6 +56,7 @@ export function QuickEntry({ onApplied }: { onApplied: () => void }) {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           placeholder="e.g. slept 7 hours, drank 4 waters, ran 5k, spent $12 on coffee"
+          maxLength={2000}
           className="min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-900"
         />
         <button

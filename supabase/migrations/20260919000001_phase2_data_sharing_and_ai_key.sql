@@ -9,12 +9,22 @@
 alter table profiles add column if not exists avatar_url text;
 alter table profiles add column if not exists anthropic_key_secret_id uuid;
 
+alter table profiles drop constraint if exists profiles_display_name_length;
+alter table profiles add constraint profiles_display_name_length check (char_length(display_name) <= 100);
+
 -- Habits/vitals are meant to be visible across the invite-only user base
--- (see "connect with other users"), so any signed-in user needs to be able
--- to read basic profile info (name + avatar) for everyone, not just themselves.
-drop policy if exists "select own profile" on profiles;
-create policy "select any profile" on profiles
-  for select using (true);
+-- (see "connect with other users"), so any signed-in user needs to read
+-- basic profile info (name + avatar) for everyone — but the full `profiles`
+-- row also carries `anthropic_key_secret_id`, which has no reason to be
+-- readable by anyone but its owner. Keep the base table locked to "own row
+-- only" and expose just the three safe columns through a view instead.
+-- (The view is intentionally NOT security_invoker: it runs as the view
+-- owner, which bypasses the base table's RLS so it can show every user's
+-- safe columns while the base table itself stays locked down.)
+create or replace view public_profiles as
+  select id, display_name, avatar_url from profiles;
+
+grant select on public_profiles to authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Habits + daily completion history (shared/visible)
@@ -23,7 +33,7 @@ create policy "select any profile" on profiles
 create table if not exists habits (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
-  name text not null,
+  name text not null check (char_length(name) between 1 and 200),
   archived_at timestamptz,
   created_at timestamptz not null default now()
 );
@@ -97,9 +107,9 @@ create table if not exists expenses (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   log_date date not null default current_date,
-  label text not null,
-  amount numeric not null,
-  category text not null default 'general',
+  label text not null check (char_length(label) between 1 and 200),
+  amount numeric not null check (amount > 0),
+  category text not null default 'general' check (char_length(category) <= 50),
   created_at timestamptz not null default now()
 );
 
@@ -112,9 +122,17 @@ create policy "manage own expenses" on expenses
 -- Profile pictures: public storage bucket, folder-scoped write access
 -- ---------------------------------------------------------------------------
 
-insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars',
+  'avatars',
+  true,
+  5242880, -- 5 MB
+  array['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+)
+on conflict (id) do update set
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 create policy "avatar images are publicly accessible" on storage.objects
   for select using (bucket_id = 'avatars');

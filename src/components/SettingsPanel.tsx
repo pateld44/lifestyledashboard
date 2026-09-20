@@ -15,6 +15,7 @@ export function SettingsPanel({
 }) {
   const fileRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [avatarError, setAvatarError] = useState('')
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [anthropicKey, setAnthropicKey] = useState('')
   const [keyStatus, setKeyStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -28,8 +29,11 @@ export function SettingsPanel({
     const file = e.target.files?.[0]
     if (!file) return
     setUploading(true)
+    setAvatarError('')
     try {
       await onUploadAvatar(file)
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : 'Could not upload that image.')
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -88,6 +92,7 @@ export function SettingsPanel({
               </button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
             </div>
+            {avatarError && <p className="mt-2 text-xs text-red-500">{avatarError}</p>}
           </div>
 
           <div>
@@ -98,6 +103,7 @@ export function SettingsPanel({
               <input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                maxLength={100}
                 className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-violet-400 dark:border-slate-700 dark:bg-slate-800"
               />
               <button

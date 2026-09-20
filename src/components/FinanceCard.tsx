@@ -86,6 +86,7 @@ export function FinanceCard({
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder="Expense"
+          maxLength={200}
           className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-amber-400 dark:border-slate-700 dark:bg-slate-800"
         />
         <input

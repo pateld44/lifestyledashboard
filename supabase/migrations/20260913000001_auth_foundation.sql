@@ -21,7 +21,9 @@ create policy "update own profile" on profiles
 
 -- Reject signup for any email not present in allowed_emails.
 create or replace function public.enforce_allowed_email()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer
+set search_path = public
+as $$
 begin
   if not exists (select 1 from allowed_emails where email = new.email) then
     raise exception 'signup not allowed for this email';
@@ -37,7 +39,9 @@ create trigger before_user_created
 
 -- Auto-create a profile row whenever a new auth user is created.
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer as $$
+returns trigger language plpgsql security definer
+set search_path = public
+as $$
 begin
   insert into public.profiles (id, display_name)
   values (new.id, new.raw_user_meta_data ->> 'name');

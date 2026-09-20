@@ -10,17 +10,34 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001' // fast/cheap — this is simple extraction, not reasoning
+const MAX_TEXT_LENGTH = 2000
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Vite's dev/preview defaults. Add the real deployed domain once you have one:
+// `supabase secrets set ALLOWED_ORIGINS=https://your-app.example.com,http://localhost:5173`
+const DEFAULT_ALLOWED_ORIGINS = ['http://localhost:5173', 'http://localhost:4173']
+
+function resolveAllowedOrigins(): string[] {
+  const configured = Deno.env.get('ALLOWED_ORIGINS')
+  if (!configured) return DEFAULT_ALLOWED_ORIGINS
+  return configured
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean)
 }
 
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, 'content-type': 'application/json' },
-  })
+function corsHeadersFor(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin') ?? ''
+  const allowed = resolveAllowedOrigins()
+  // Only ever echo back an origin that's actually on the allowlist. A
+  // mismatched value here still fails the browser's own CORS check, so a
+  // disallowed origin gets rejected client-side even if this function
+  // executes and returns a body.
+  const allowOrigin = allowed.includes(origin) ? origin : allowed[0]
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    Vary: 'Origin',
+  }
 }
 
 const EXTRACTION_TOOL = {
@@ -72,7 +89,11 @@ function todayStr() {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  const cors = corsHeadersFor(req)
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { ...cors, 'content-type': 'application/json' } })
+
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const authHeader = req.headers.get('Authorization')
@@ -99,6 +120,9 @@ Deno.serve(async (req) => {
   }
   const text = body.text?.trim()
   if (!text) return json({ error: "Missing 'text'" }, 400)
+  if (text.length > MAX_TEXT_LENGTH) {
+    return json({ error: `Text too long (max ${MAX_TEXT_LENGTH} characters).` }, 400)
+  }
 
   // Service-role client used only to decrypt this user's own stored key.
   const adminClient = createClient(supabaseUrl, serviceRoleKey)
@@ -168,7 +192,7 @@ Deno.serve(async (req) => {
       if (!habit) {
         const { data: created, error: createErr } = await userClient
           .from('habits')
-          .insert({ user_id: userId, name: mentioned.trim() })
+          .insert({ user_id: userId, name: mentioned.trim().slice(0, 200) })
           .select('id, name')
           .single()
         if (createErr || !created) continue
@@ -214,17 +238,19 @@ Deno.serve(async (req) => {
   // --- Expenses: straightforward inserts ---
   if (parsed.expenses?.length) {
     const rows = parsed.expenses
-      .filter((e) => e.label && typeof e.amount === 'number')
+      .filter((e) => e.label?.trim() && typeof e.amount === 'number' && e.amount > 0)
       .map((e) => ({
         user_id: userId,
         log_date: today,
-        label: e.label.trim(),
+        label: e.label.trim().slice(0, 200),
         amount: e.amount,
-        category: e.category?.trim() || 'general',
+        category: (e.category?.trim() || 'general').slice(0, 50),
       }))
     if (rows.length) {
-      await userClient.from('expenses').insert(rows)
-      summary.expensesAdded = rows.map((r) => `${r.label} ($${r.amount})`)
+      const { error: expenseError } = await userClient.from('expenses').insert(rows)
+      if (!expenseError) {
+        summary.expensesAdded = rows.map((r) => `${r.label} ($${r.amount})`)
+      }
     }
   }
 

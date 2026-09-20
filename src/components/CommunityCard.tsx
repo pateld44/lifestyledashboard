@@ -23,7 +23,7 @@ export function CommunityCard({ currentUserId }: { currentUserId: string }) {
       const today = todayStr()
 
       const { data: profiles } = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('id, display_name, avatar_url')
         .neq('id', currentUserId)
 

@@ -28,7 +28,20 @@ export function useProfile(userId: string) {
     await reload()
   }
 
+  const MAX_AVATAR_BYTES = 5 * 1024 * 1024
+  const ALLOWED_AVATAR_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif']
+
   async function uploadAvatar(file: File) {
+    // Fast client-side feedback only — the Storage bucket's own
+    // file_size_limit/allowed_mime_types are the actual enforcement, since a
+    // client can always be bypassed.
+    if (!ALLOWED_AVATAR_TYPES.includes(file.type)) {
+      throw new Error('Please choose a PNG, JPEG, WebP, or GIF image.')
+    }
+    if (file.size > MAX_AVATAR_BYTES) {
+      throw new Error('Image must be under 5MB.')
+    }
+
     const ext = file.name.split('.').pop() || 'png'
     const path = `${userId}/avatar.${ext}`
 
