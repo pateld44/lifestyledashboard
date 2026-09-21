@@ -13,6 +13,7 @@ import { QuickEntry } from './components/QuickEntry'
 import { SettingsPanel } from './components/SettingsPanel'
 import { HistoryView } from './components/HistoryView'
 import { TodoCalendar } from './components/TodoCalendar'
+import { OverviewPage } from './components/OverviewPage'
 import { supabase } from './lib/supabaseClient'
 import { getErrorMessage } from './lib/errors'
 
@@ -57,9 +58,6 @@ function Dashboard({ userId }: { userId: string }) {
       <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-10">
         <header className="flex items-start justify-between gap-4">
           <div>
-            <a href="/" className="text-xs text-slate-400 hover:text-violet-500">
-              &larr; About
-            </a>
             <h1 className="text-2xl font-semibold tracking-tight">Lifestyle Dashboard</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">{today}</p>
           </div>
@@ -154,13 +152,47 @@ function Dashboard({ userId }: { userId: string }) {
   )
 }
 
-function App() {
+function DashboardGate() {
   const { session, loading } = useSession()
 
   if (loading) return null
   if (!session) return <LoginScreen />
 
   return <Dashboard userId={session.user.id} />
+}
+
+const SITE_TAB_LABELS = { overview: 'Overview', dashboard: 'Dashboard' } as const
+
+function App() {
+  const [siteTab, setSiteTab] = useState<'overview' | 'dashboard'>('overview')
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <nav className="sticky top-0 z-10 flex justify-center border-b border-slate-200 bg-slate-50/90 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+        <div className="flex gap-1 rounded-full border border-slate-200 bg-white p-1 dark:border-slate-800 dark:bg-slate-900">
+          {(['overview', 'dashboard'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setSiteTab(t)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium ${
+                siteTab === t
+                  ? 'bg-violet-500 text-white'
+                  : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
+              }`}
+            >
+              {SITE_TAB_LABELS[t]}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {siteTab === 'overview' ? (
+        <OverviewPage onOpenDashboard={() => setSiteTab('dashboard')} />
+      ) : (
+        <DashboardGate />
+      )}
+    </div>
+  )
 }
 
 export default App

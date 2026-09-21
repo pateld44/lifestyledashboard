@@ -159,9 +159,10 @@ framework and goal-tracking widget are not built; see Deferred, below.
       Edge Function. Verified live.
 
 **Added beyond the original Phase 2 scope, per a later request:**
-- [x] A public landing page (`index.html`) separate from the app (`app.html`),
-      explaining the problem/solution and including two illustrative user-story
-      quotes.
+- [x] A public landing page explaining the problem/solution and including two
+      illustrative user-story quotes. *(Originally a separate `index.html` /
+      `app.html` pair; later merged into a single page with "Overview" and
+      "Dashboard" tabs — see Phase 5.)*
 
 *(Cross-user visibility and profile pictures were also added beyond the
 original Phase 2 scope, but are substantial enough to be their own phase —
@@ -176,8 +177,8 @@ see Phase 3, below.)*
   unaffected — see Out of scope).
 - Date-based history for all three existing panels, with streaks derived from real
   completion history instead of a manual counter.
-- A public landing page (`index.html`) introducing the product, separate from
-  the app itself (`app.html`).
+- A public landing page introducing the product *(later merged with the app
+  into a single tabbed page — see Phase 5)*.
 - "Quick entry": free-text daily check-ins parsed into habits/vitals/expenses
   by Claude, using the user's own Anthropic key.
 - User-managed Anthropic API key storage (encrypted at rest via Supabase Vault,
@@ -468,9 +469,9 @@ npm install
 npm run dev
 ```
 
-This serves the landing page at `/` and the app at `/app.html`. The app
-itself needs a connected Supabase project to do anything past the login
-screen — see below.
+This serves the app at `/`, opening on the "Overview" tab. Switching to the
+"Dashboard" tab needs a connected Supabase project to do anything past the
+login screen — see below.
 
 Type-check / production build:
 
@@ -519,9 +520,9 @@ on load (`supabaseClient.ts` requires `VITE_SUPABASE_URL` /
    Email* → turn off "Confirm email". Auth is email+password (not magic
    link — see Open Questions), and without this toggle `signUp` still tries
    to send a confirmation email and hits the same rate limit.
-7. **Sign in.** `npm run dev`, open `/app.html`, enter your allowlisted email
-   and any password, and click "Create account" (or "Sign in" if the account
-   already exists).
+7. **Sign in.** `npm run dev`, switch to the "Dashboard" tab, enter your
+   allowlisted email and any password, and click "Create account" (or "Sign
+   in" if the account already exists).
 8. **(Optional) Add your Anthropic key.** In the app's Settings panel, to
    enable Quick Entry. Get one at [console.anthropic.com](https://console.anthropic.com).
 
