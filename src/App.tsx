@@ -4,17 +4,14 @@ import { useHabits } from './hooks/useHabits'
 import { useVitals } from './hooks/useVitals'
 import { useFinance } from './hooks/useFinance'
 import { useProfile } from './hooks/useProfile'
-import { LoginScreen } from './components/LoginScreen'
 import { HabitsCard } from './components/HabitsCard'
 import { HealthCard } from './components/HealthCard'
 import { FinanceCard } from './components/FinanceCard'
-import { CommunityCard } from './components/CommunityCard'
 import { QuickEntry } from './components/QuickEntry'
 import { SettingsPanel } from './components/SettingsPanel'
 import { HistoryView } from './components/HistoryView'
 import { TodoCalendar } from './components/TodoCalendar'
 import { OverviewPage } from './components/OverviewPage'
-import { supabase } from './lib/supabaseClient'
 import { getErrorMessage } from './lib/errors'
 
 const TAB_LABELS = { today: 'Today', todo: 'To-Do', history: 'History' } as const
@@ -61,27 +58,19 @@ function Dashboard({ userId }: { userId: string }) {
             <h1 className="text-2xl font-semibold tracking-tight">Lifestyle Dashboard</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">{today}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowSettings(true)}
-              className="flex items-center gap-2 text-xs text-slate-500 hover:text-violet-500 dark:text-slate-400"
-            >
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
-              ) : (
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-500 dark:bg-slate-800">
-                  {(profile?.display_name || 'You')[0]?.toUpperCase()}
-                </span>
-              )}
-              Settings
-            </button>
-            <button
-              onClick={() => supabase.auth.signOut()}
-              className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            >
-              Sign out
-            </button>
-          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="flex items-center gap-2 text-xs text-slate-500 hover:text-violet-500 dark:text-slate-400"
+          >
+            {profile?.avatar_url ? (
+              <img src={profile.avatar_url} alt="" className="h-7 w-7 rounded-full object-cover" />
+            ) : (
+              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-[10px] font-semibold text-slate-500 dark:bg-slate-800">
+                {(profile?.display_name || 'You')[0]?.toUpperCase()}
+              </span>
+            )}
+            Settings
+          </button>
         </header>
 
         <nav className="flex gap-1 self-start rounded-full border border-slate-200 p-1 dark:border-slate-800">
@@ -127,14 +116,12 @@ function Dashboard({ userId }: { userId: string }) {
               />
             </main>
 
-            <CommunityCard currentUserId={userId} />
-
             <footer className="pt-4 text-center text-xs text-slate-400">
-              Habits and vitals are visible to other invited users. Your budget and expenses stay private.
+              Your data is private to this browser — no account or sign-in required. A different browser or device sees its own separate, empty copy.
             </footer>
           </>
         ) : tab === 'todo' ? (
-          <TodoCalendar />
+          <TodoCalendar userId={userId} />
         ) : (
           <HistoryView userId={userId} />
         )}
@@ -153,10 +140,17 @@ function Dashboard({ userId }: { userId: string }) {
 }
 
 function DashboardGate() {
-  const { session, loading } = useSession()
+  const { session, loading, error } = useSession()
 
   if (loading) return null
-  if (!session) return <LoginScreen />
+  if (error) {
+    return (
+      <div className="mx-auto max-w-md px-4 py-16 text-center text-sm text-red-600 dark:text-red-400">
+        {error}
+      </div>
+    )
+  }
+  if (!session) return null
 
   return <Dashboard userId={session.user.id} />
 }

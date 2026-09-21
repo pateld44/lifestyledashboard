@@ -102,10 +102,10 @@ export function OverviewPage({ onOpenDashboard }: { onOpenDashboard: () => void 
               4
             </span>
             <div>
-              <h3 className="text-sm font-semibold">See how the rest of the group is doing</h3>
+              <h3 className="text-sm font-semibold">No account, no login</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                Invited users can see each other's habit streaks and vitals for a little friendly
-                accountability. Budgets and expenses are never shared.
+                Open the dashboard and your own private space is ready instantly — your data
+                stays yours on this browser, with nothing to sign up for.
               </p>
             </div>
           </li>
@@ -148,11 +148,11 @@ export function OverviewPage({ onOpenDashboard }: { onOpenDashboard: () => void 
             <div className="mb-2 flex items-center gap-2">
               <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
               <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Community
+                To-Do
               </h3>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              See other invited users' streaks and vitals for light accountability.
+              A calendar you can click into — add, check off, and remove items for any day.
             </p>
           </div>
         </div>
@@ -166,7 +166,7 @@ export function OverviewPage({ onOpenDashboard }: { onOpenDashboard: () => void 
           Open the dashboard →
         </button>
         <p className="mt-6 text-xs text-slate-400">
-          Invite-only right now.{' '}
+          Open to anyone with the link — no account required.{' '}
           <a href="https://github.com/pateld44/lifestyledashboard" className="underline hover:text-violet-500">
             Source &amp; full PRD on GitHub
           </a>

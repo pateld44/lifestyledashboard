@@ -5,8 +5,9 @@ a live Supabase project (accounts, dated history, AI quick-entry) — widget
 framework and goal tracking remain deferred within it. Phase 3 (Connections:
 cross-user habit/vitals visibility, avatars) and Phase 4 (History & trends:
 vitals line charts, spending-by-category donut chart) also shipped. Phase 5
-(single-page Overview/Dashboard + public GitHub Pages deploy) also shipped —
-live at https://pateld44.github.io/lifestyledashboard/.
+(single-page Overview/Dashboard + public GitHub Pages deploy) and Phase 6
+(open anonymous access, no login screen, per-user To-Do calendar) also
+shipped — live at https://pateld44.github.io/lifestyledashboard/.
 See [Setting up Supabase](#setting-up-supabase-required-before-phase-2-works)
 to stand up your own instance.
 **Owner:** pateld44
@@ -489,6 +490,93 @@ Auth) — and deploys that single page publicly via GitHub Pages.
   confirm no real Supabase/Anthropic keys were ever committed (`.env.local`
   matches the `*.local` gitignore pattern; only `.env.example` is tracked).
 
+## Phase 6 (shipped): Open, anonymous access; per-user To-Do calendar
+
+### Summary
+
+Phase 6 removes the login screen. Every visitor is silently signed in as a
+unique anonymous Supabase user on first load — no email/password, no invite
+allowlist gate — while still getting a real per-user account (`auth.uid()`)
+behind the scenes, so their habits/vitals/finance data stays theirs across
+reloads on that browser exactly like a named account did. It also adds a
+To-Do calendar widget backed by the same per-user Supabase model (replacing
+an earlier `localStorage`-only version), and removes the Community widget,
+since "every invited user sees every other invited user" doesn't make sense
+once there's no curated invite list anymore — a stranger's habit streak
+isn't useful information to another stranger.
+
+### Success criteria (Phase 6)
+
+- [x] Opening the "Dashboard" tab requires no email, password, or account
+      creation step — a working session exists within moments of first load.
+- [x] Each anonymous visitor's data (habits, vitals, finance, to-dos) is
+      private to them and persists across reloads on the same browser,
+      backed by a real Postgres row per user, not `localStorage`.
+- [x] The invite allowlist (`allowed_emails`) no longer blocks signup —
+      anonymous sign-ins are exempted at the trigger level.
+- [x] The Community widget and its "visible to other invited users" copy are
+      removed from the open-access UI.
+- [x] A To-Do calendar widget: click a day, add/check/remove items for that
+      date, backed by a new per-user `todos` table (RLS + grants, same
+      pattern as habits/vitals/finance).
+- [x] The calendar grid is a real `<table>` with `scope="col"` weekday
+      headers, one tabbable cell (roving `tabindex`), arrow-key/Home/End/
+      PageUp/PageDown navigation between dates, and an `aria-label` per cell
+      announcing the full date and item count — not just a styled `<div>`
+      grid of click targets.
+
+### Scope
+
+**In scope — Phase 6**
+- Automatic anonymous sign-in (`supabase.auth.signInAnonymously()`) in place
+  of the login screen; `LoginScreen` removed.
+- `enforce_allowed_email()` trigger updated to allow any `is_anonymous` user
+  through, regardless of the `allowed_emails` table.
+- `todos` table: per-user, RLS-scoped, never shared with other users.
+- To-Do calendar UI: month grid, day selection, add/check/remove items,
+  full keyboard navigation and screen-reader labeling.
+- Community widget removed from the rendered UI (component and its
+  database policies are untouched/left in place, just unused).
+
+**Out of scope — Phase 6 (deferred to a later phase)**
+- A path to upgrade an anonymous session into a named account
+  (`supabase.auth.updateUser` / account linking) so a visitor could
+  optionally keep their data across devices/browsers.
+- Automated daily email/text summaries of the day's to-dos — still needs a
+  server-side scheduled job with access to the data; deferred from the
+  original To-Do request for the same reason.
+- Re-introducing any cross-visitor visibility now that there's no curated
+  invite group.
+
+### Technical considerations
+
+- Anonymous Supabase users get a real JWT with `role: authenticated` and a
+  real `auth.uid()`, identical to a named account for RLS/grant purposes —
+  the existing `habits`/`vitals_logs`/`budgets`/`expenses` policies and
+  grants needed zero changes. Only the allowlist trigger (which explicitly
+  checked `new.email`) needed to special-case `is_anonymous` rows, since
+  anonymous users have no email at all.
+- An anonymous identity lives in that browser's Supabase session token
+  (refreshed automatically, survives reloads) — it is not a `localStorage`
+  hand-rolled identity like the Daybook artifact's. Clearing site data,
+  using a private window, or switching browsers/devices produces a new,
+  empty anonymous identity with no link back to the old one, since nothing
+  connects them without a real credential.
+- The To-Do calendar uses a real `<table>` (not `role="grid"` on `<div>`s)
+  so screen readers get native row/column-header semantics for free, plus a
+  roving-`tabindex` pattern (one focusable cell at a time, arrow keys move
+  it) — the standard accessible date-grid pattern, rather than making every
+  date individually Tab-stoppable.
+
+### Open questions
+
+- Should there be an explicit, opt-in way to convert an anonymous session
+  into a permanent account later (so a visitor who wants cross-device sync
+  can get it), reusing the `allowed_emails`/email-password flow that's still
+  in the schema but currently has no UI path to reach it?
+- Now that Community is unused, should its table/policies be dropped, or
+  left in place in case a future "opt-in named accounts" mode wants it back?
+
 ## Beyond Phase 2/3/4 (later candidates)
 
 - Live email connection (Gmail OAuth, and later Outlook) for automatic
@@ -537,19 +625,26 @@ on load (`supabaseClient.ts` requires `VITE_SUPABASE_URL` /
 3. **Apply the migrations, in order.** In the dashboard's *SQL Editor*, run
    the contents of each file in `supabase/migrations/`, oldest first:
    `20260913000001_auth_foundation.sql`,
-   `20260919000001_phase2_data_sharing_and_ai_key.sql`, then
-   `20260920000001_grant_authenticated_table_access.sql` (without this last
-   one, every widget fails with "permission denied" — RLS policies alone
-   aren't enough, see Phase 2's Technical considerations). Or, once you've run
+   `20260919000001_phase2_data_sharing_and_ai_key.sql`,
+   `20260920000001_grant_authenticated_table_access.sql` (without this one,
+   every widget fails with "permission denied" — RLS policies alone aren't
+   enough, see Phase 2's Technical considerations), then
+   `20260921000001_phase6_anonymous_access_and_todos.sql`. Or, once you've run
    `supabase login` and `supabase link --project-ref <your-ref>` locally,
-   `supabase db push` applies all three.
-4. **Add yourself to the allowlist.** This app is invite-only — signup fails
-   for any email not in `allowed_emails`. In the SQL Editor:
+   `supabase db push` applies all four.
+4. **Enable anonymous sign-ins.** *Authentication → Sign In / Providers →
+   Anonymous* → turn this on. The app has no login screen — every visitor is
+   silently signed in as a unique anonymous user (see Phase 6) — and without
+   this toggle that call fails and the Dashboard tab shows an error instead
+   of loading.
+5. **(Optional) Invite named accounts too.** The invite-only allowlist from
+   Phase 1/2 still exists in the schema (`allowed_emails`) for any future
+   permanent, email-based signup flow, but nothing in the current UI creates
+   one — every visitor today is anonymous. To add an email for later:
    ```sql
    insert into allowed_emails (email) values ('you@example.com');
    ```
-   Add each friend you want on the platform the same way.
-5. **Deploy the Edge Function.** Quick-entry needs to run server-side (it's
+6. **Deploy the Edge Function.** Quick-entry needs to run server-side (it's
    what keeps Anthropic keys out of the browser). Either with the CLI linked
    (`supabase functions deploy quick-entry`) or by pasting
    `supabase/functions/quick-entry/index.ts` into the dashboard's Edge
@@ -557,13 +652,8 @@ on load (`supabaseClient.ts` requires `VITE_SUPABASE_URL` /
    `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SUPABASE_SERVICE_ROLE_KEY` are
    injected automatically for every Edge Function, and the Anthropic key
    itself is per-user (stored via Vault, not a platform-wide secret).
-6. **Disable email confirmation.** *Authentication → Sign In / Providers →
-   Email* → turn off "Confirm email". Auth is email+password (not magic
-   link — see Open Questions), and without this toggle `signUp` still tries
-   to send a confirmation email and hits the same rate limit.
-7. **Sign in.** `npm run dev`, switch to the "Dashboard" tab, enter your
-   allowlisted email and any password, and click "Create account" (or "Sign
-   in" if the account already exists).
+7. **Open the app.** `npm run dev`, switch to the "Dashboard" tab — no sign-in
+   step, it loads straight in as a fresh anonymous user.
 8. **(Optional) Add your Anthropic key.** In the app's Settings panel, to
    enable Quick Entry. Get one at [console.anthropic.com](https://console.anthropic.com).
 

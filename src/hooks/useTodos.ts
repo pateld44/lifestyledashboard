@@ -1,41 +1,47 @@
 import { useCallback, useEffect, useState } from 'react'
+import { supabase } from '../lib/supabaseClient'
 import type { TodoItem } from '../types'
 
-const STORAGE_KEY = 'lifestyle-dashboard:todos'
+export function useTodos(userId: string) {
+  const [todos, setTodos] = useState<TodoItem[]>([])
+  const [loading, setLoading] = useState(true)
 
-function loadTodos(): TodoItem[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as TodoItem[]) : []
-  } catch {
-    return []
-  }
-}
+  const reload = useCallback(async () => {
+    const { data } = await supabase
+      .from('todos')
+      .select('id, log_date, text, done')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true })
 
-export function useTodos() {
-  const [todos, setTodos] = useState<TodoItem[]>(() => loadTodos())
+    setTodos((data ?? []).map((t) => ({ id: t.id, date: t.log_date, text: t.text, done: t.done })))
+    setLoading(false)
+  }, [userId])
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(todos))
-    } catch {
-      // localStorage unavailable (private mode, quota) — todos just won't persist
-    }
-  }, [todos])
+    reload()
+  }, [reload])
 
-  const addTodo = useCallback((date: string, text: string) => {
+  async function addTodo(date: string, text: string) {
     const trimmed = text.trim()
     if (!trimmed) return
-    setTodos((prev) => [...prev, { id: crypto.randomUUID(), date, text: trimmed, done: false }])
-  }, [])
+    const { error } = await supabase.from('todos').insert({ user_id: userId, log_date: date, text: trimmed })
+    if (error) throw error
+    await reload()
+  }
 
-  const toggleTodo = useCallback((id: string) => {
-    setTodos((prev) => prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)))
-  }, [])
+  async function toggleTodo(id: string) {
+    const todo = todos.find((t) => t.id === id)
+    if (!todo) return
+    const { error } = await supabase.from('todos').update({ done: !todo.done }).eq('id', id)
+    if (error) throw error
+    await reload()
+  }
 
-  const removeTodo = useCallback((id: string) => {
-    setTodos((prev) => prev.filter((t) => t.id !== id))
-  }, [])
+  async function removeTodo(id: string) {
+    const { error } = await supabase.from('todos').delete().eq('id', id)
+    if (error) throw error
+    await reload()
+  }
 
-  return { todos, addTodo, toggleTodo, removeTodo }
+  return { todos, loading, addTodo, toggleTodo, removeTodo, reload }
 }
