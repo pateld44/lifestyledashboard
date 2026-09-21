@@ -4,7 +4,9 @@
 a live Supabase project (accounts, dated history, AI quick-entry) — widget
 framework and goal tracking remain deferred within it. Phase 3 (Connections:
 cross-user habit/vitals visibility, avatars) and Phase 4 (History & trends:
-vitals line charts, spending-by-category donut chart) also shipped.
+vitals line charts, spending-by-category donut chart) also shipped. Phase 5
+(single-page Overview/Dashboard + public GitHub Pages deploy) also shipped —
+live at https://pateld44.github.io/lifestyledashboard/.
 See [Setting up Supabase](#setting-up-supabase-required-before-phase-2-works)
 to stand up your own instance.
 **Owner:** pateld44
@@ -448,6 +450,45 @@ donut chart for Finance.
   expense reliably lands in a real category slice instead of sometimes
   falling back to "Other"?
 
+## Phase 5 (shipped): Single-page site + GitHub Pages
+
+### Summary
+
+The landing page (`index.html`) and the app (`app.html`) were previously two
+separate multi-page-build entries, linked to each other by URL. Phase 5
+merges them into one page with two tabs — "Overview" (why this matters, what
+it does) and "Dashboard" (the actual app, session-gated behind Supabase
+Auth) — and deploys that single page publicly via GitHub Pages.
+
+### Success criteria (Phase 5)
+
+- [x] The site opens on an "Overview" tab explaining the problem and what
+      the product does, and a "Dashboard" tab with the real app, both on one
+      page with no full navigation/reload between them.
+- [x] The repo is public and deployed via GitHub Actions to GitHub Pages,
+      live at https://pateld44.github.io/lifestyledashboard/.
+- [x] The Pages build works from a `/lifestyledashboard/` subpath (asset URLs,
+      the favicon, and in-page navigation all resolve correctly there), while
+      local dev and any future root-domain host (Vercel/Netlify-style) still
+      serve correctly from `/`.
+
+### Technical considerations
+
+- `vite.config.ts`'s `base` is conditional on a `GH_PAGES` build-time env var
+  (`/lifestyledashboard/` when set, `/` otherwise) so Pages' subpath
+  requirement doesn't leak into local dev or a future root-domain deploy.
+- The old hand-written `<a href="/app.html">` links only worked because they
+  were root-absolute on a root-domain deploy; they're gone now that
+  Dashboard is a tab, not a separate page.
+- `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY` are baked in at build time via
+  GitHub Actions repo secrets (`Settings → Secrets and variables → Actions`);
+  the anon key is safe to expose client-side by design (RLS enforces access),
+  same as in local `.env.local`.
+- Making the repo public was required — GitHub Pages isn't available for
+  private repos on a Free plan. Checked history and `.gitignore` first to
+  confirm no real Supabase/Anthropic keys were ever committed (`.env.local`
+  matches the `*.local` gitignore pattern; only `.env.example` is tracked).
+
 ## Beyond Phase 2/3/4 (later candidates)
 
 - Live email connection (Gmail OAuth, and later Outlook) for automatic
@@ -528,5 +569,6 @@ on load (`supabaseClient.ts` requires `VITE_SUPABASE_URL` /
 
 ## Links
 
-- Artifact ("Daybook"): https://claude.ai/code/artifact/dd0e5337-1126-4eb9-b262-907c4d48341b
+- Live app: https://pateld44.github.io/lifestyledashboard/
+- Artifact ("Daybook"/"Vantage"): https://claude.ai/code/artifact/dd0e5337-1126-4eb9-b262-907c4d48341b
 - Repo: https://github.com/pateld44/lifestyledashboard
