@@ -12,13 +12,16 @@ import { CommunityCard } from './components/CommunityCard'
 import { QuickEntry } from './components/QuickEntry'
 import { SettingsPanel } from './components/SettingsPanel'
 import { HistoryView } from './components/HistoryView'
+import { TodoCalendar } from './components/TodoCalendar'
 import { supabase } from './lib/supabaseClient'
 import { getErrorMessage } from './lib/errors'
+
+const TAB_LABELS = { today: 'Today', todo: 'To-Do', history: 'History' } as const
 
 function Dashboard({ userId }: { userId: string }) {
   const [showSettings, setShowSettings] = useState(false)
   const [actionError, setActionError] = useState('')
-  const [tab, setTab] = useState<'today' | 'history'>('today')
+  const [tab, setTab] = useState<'today' | 'todo' | 'history'>('today')
   const { habits, addHabit, removeHabit, toggleHabit, reload: reloadHabits } = useHabits(userId)
   const { vitals, setVitals, reload: reloadVitals } = useVitals(userId)
   const { monthlyBudget, expenses, setBudget, addExpense, removeExpense, reload: reloadFinance } =
@@ -84,17 +87,17 @@ function Dashboard({ userId }: { userId: string }) {
         </header>
 
         <nav className="flex gap-1 self-start rounded-full border border-slate-200 p-1 dark:border-slate-800">
-          {(['today', 'history'] as const).map((t) => (
+          {(['today', 'todo', 'history'] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium capitalize ${
+              className={`rounded-full px-4 py-1.5 text-sm font-medium ${
                 tab === t
                   ? 'bg-violet-500 text-white'
                   : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
               }`}
             >
-              {t}
+              {TAB_LABELS[t]}
             </button>
           ))}
         </nav>
@@ -132,6 +135,8 @@ function Dashboard({ userId }: { userId: string }) {
               Habits and vitals are visible to other invited users. Your budget and expenses stay private.
             </footer>
           </>
+        ) : tab === 'todo' ? (
+          <TodoCalendar />
         ) : (
           <HistoryView userId={userId} />
         )}

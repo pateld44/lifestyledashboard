@@ -23,3 +23,10 @@ export interface FinanceState {
   monthlyBudget: number
   expenses: Expense[]
 }
+
+export interface TodoItem {
+  id: string
+  date: string // YYYY-MM-DD
+  text: string
+  done: boolean
+}

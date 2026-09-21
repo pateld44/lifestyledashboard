@@ -1,4 +1,5 @@
-<title>Daybook</title>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Vantage</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,440;9..144,560&family=Public+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -17,6 +18,8 @@
     --accent-health-bg: rgba(28, 138, 107, 0.1);
     --accent-finance: #a8672a;
     --accent-finance-bg: rgba(168, 103, 42, 0.1);
+    --accent-todo: #2f6fb2;
+    --accent-todo-bg: rgba(47, 111, 178, 0.1);
     --good: #3c9b5f;
     --warn: #d98c2b;
     --critical: #b23b3b;
@@ -38,6 +41,8 @@
       --accent-health-bg: rgba(63, 196, 149, 0.14);
       --accent-finance: #d89b4c;
       --accent-finance-bg: rgba(216, 155, 76, 0.14);
+      --accent-todo: #7bb0e8;
+      --accent-todo-bg: rgba(123, 176, 232, 0.14);
       --good: #57b37e;
       --warn: #e4a93c;
       --critical: #d96666;
@@ -59,6 +64,8 @@
     --accent-health-bg: rgba(63, 196, 149, 0.14);
     --accent-finance: #d89b4c;
     --accent-finance-bg: rgba(216, 155, 76, 0.14);
+    --accent-todo: #7bb0e8;
+    --accent-todo-bg: rgba(123, 176, 232, 0.14);
     --good: #57b37e;
     --warn: #e4a93c;
     --critical: #d96666;
@@ -178,6 +185,7 @@
   .panel:nth-child(1) { animation-delay: 0.02s; }
   .panel:nth-child(2) { animation-delay: 0.1s; }
   .panel:nth-child(3) { animation-delay: 0.18s; }
+  .panel-wide { grid-column: 1 / -1; }
 
   @keyframes rise {
     to { opacity: 1; transform: translateY(0); }
@@ -190,6 +198,7 @@
   #habits-panel { --panel-accent: var(--accent-habits); }
   #health-panel { --panel-accent: var(--accent-health); }
   #finance-panel { --panel-accent: var(--accent-finance); }
+  #todo-panel { --panel-accent: var(--accent-todo); }
 
   .panel-title {
     display: flex;
@@ -466,6 +475,99 @@
     font-weight: 600;
   }
 
+  .calendar-layout {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 20px;
+  }
+
+  @media (max-width: 640px) {
+    .calendar-layout { grid-template-columns: 1fr; }
+  }
+
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .calendar-nav button {
+    border: none;
+    background: none;
+    color: var(--text-dim);
+    font-size: 15px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .calendar-nav button:hover { background: var(--surface-2); color: var(--ink); }
+
+  .calendar-nav .cal-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .calendar-weekdays, .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+
+  .calendar-weekdays div {
+    text-align: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .calendar-weekdays { margin-bottom: 4px; }
+
+  .cal-cell {
+    height: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: none;
+    color: var(--ink);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
+  }
+  .cal-cell:hover { background: var(--surface-2); }
+  .cal-cell.today { color: var(--accent-todo); font-weight: 600; }
+  .cal-cell.selected { background: var(--accent-todo-bg); border-color: var(--accent-todo); }
+
+  .cal-dots {
+    display: flex;
+    gap: 2px;
+  }
+  .cal-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent-todo);
+  }
+  .cal-dot.all-done { background: var(--good); }
+
+  .day-detail-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin: 0 0 10px;
+  }
+
   footer {
     text-align: center;
     font-size: 12px;
@@ -538,6 +640,31 @@
         <button class="add-btn" id="expense-add-btn">Add</button>
       </div>
     </section>
+
+    <section class="panel panel-wide" id="todo-panel">
+      <div class="panel-title"><span class="dot"></span>To-Do Calendar</div>
+      <div class="calendar-layout">
+        <div>
+          <div class="calendar-nav">
+            <button type="button" id="cal-prev" aria-label="Previous month">‹</button>
+            <span class="cal-label" id="cal-label"></span>
+            <button type="button" id="cal-next" aria-label="Next month">›</button>
+          </div>
+          <div class="calendar-weekdays">
+            <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+          </div>
+          <div class="calendar-grid" id="calendar-grid"></div>
+        </div>
+        <div>
+          <p class="day-detail-label" id="day-detail-label"></p>
+          <ul class="rows" id="todo-list"></ul>
+          <div class="add-row">
+            <input type="text" id="todo-input" placeholder="New item" maxlength="200">
+            <button class="add-btn" id="todo-add-btn">Add</button>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 
   <footer>
@@ -565,6 +692,7 @@
         { id: 'e3', label: 'Coffee', amount: 12.5 },
       ],
     },
+    todos: [],
   };
 
   function loadState() {
@@ -579,6 +707,7 @@
           budget: parsed.finance?.budget ?? defaultState.finance.budget,
           expenses: parsed.finance?.expenses ?? defaultState.finance.expenses,
         },
+        todos: parsed.todos ?? defaultState.todos,
       };
     } catch {
       return structuredClone(defaultState);
@@ -711,11 +840,148 @@
     );
   }
 
+  // --- To-Do calendar ---
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+  function dateKey(y, m, d) { return `${y}-${pad2(m + 1)}-${pad2(d)}`; }
+  function todayKey() {
+    const d = new Date();
+    return dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+  }
+
+  const now = new Date();
+  let calCursor = { year: now.getFullYear(), month: now.getMonth() };
+  let selectedDate = todayKey();
+
+  function todosForDate(dateStr) {
+    return state.todos.filter((t) => t.date === dateStr);
+  }
+
+  function renderCalendar() {
+    const { year, month } = calCursor;
+    const firstOfMonth = new Date(year, month, 1);
+    const startWeekday = firstOfMonth.getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    document.getElementById('cal-label').textContent =
+      firstOfMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+    const grid = document.getElementById('calendar-grid');
+    grid.innerHTML = '';
+
+    for (let i = 0; i < startWeekday; i++) {
+      const spacer = document.createElement('div');
+      grid.appendChild(spacer);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const key = dateKey(year, month, day);
+      const dayTodos = todosForDate(key);
+      const openCount = dayTodos.filter((t) => !t.done).length;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cal-cell';
+      if (key === todayKey()) btn.classList.add('today');
+      if (key === selectedDate) btn.classList.add('selected');
+      btn.dataset.date = key;
+
+      const num = document.createElement('span');
+      num.textContent = String(day);
+      btn.appendChild(num);
+
+      if (dayTodos.length > 0) {
+        const dots = document.createElement('span');
+        dots.className = 'cal-dots';
+        const dotCount = Math.min(dayTodos.length, 3);
+        for (let i = 0; i < dotCount; i++) {
+          const dot = document.createElement('span');
+          dot.className = 'cal-dot' + (openCount === 0 ? ' all-done' : '');
+          dots.appendChild(dot);
+        }
+        btn.appendChild(dots);
+      }
+
+      btn.addEventListener('click', () => {
+        selectedDate = key;
+        renderCalendar();
+        renderTodoDetail();
+      });
+
+      grid.appendChild(btn);
+    }
+  }
+
+  function renderTodoDetail() {
+    const label = document.getElementById('day-detail-label');
+    label.textContent = new Date(selectedDate + 'T00:00:00').toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    const list = document.getElementById('todo-list');
+    list.innerHTML = '';
+    const dayTodos = todosForDate(selectedDate);
+    if (dayTodos.length === 0) {
+      list.innerHTML = '<li class="empty-note">Nothing yet — add an item below.</li>';
+    }
+    dayTodos.forEach((t) => {
+      const li = document.createElement('li');
+      li.className = 'row' + (t.done ? ' done' : '');
+      li.innerHTML = `
+        <label>
+          <input type="checkbox" data-todo-toggle="${t.id}" ${t.done ? 'checked' : ''}>
+          <span>${t.text}</span>
+        </label>
+        <button class="remove-btn" data-todo-remove="${t.id}" aria-label="Remove ${t.text}">✕</button>
+      `;
+      list.appendChild(li);
+    });
+    list.querySelectorAll('[data-todo-toggle]').forEach((el) =>
+      el.addEventListener('change', () => {
+        const t = state.todos.find((x) => x.id === el.dataset.todoToggle);
+        t.done = !t.done;
+        save();
+      })
+    );
+    list.querySelectorAll('[data-todo-remove]').forEach((el) =>
+      el.addEventListener('click', () => {
+        state.todos = state.todos.filter((x) => x.id !== el.dataset.todoRemove);
+        save();
+      })
+    );
+  }
+
+  document.getElementById('cal-prev').addEventListener('click', () => {
+    const d = new Date(calCursor.year, calCursor.month - 1, 1);
+    calCursor = { year: d.getFullYear(), month: d.getMonth() };
+    renderCalendar();
+  });
+  document.getElementById('cal-next').addEventListener('click', () => {
+    const d = new Date(calCursor.year, calCursor.month + 1, 1);
+    calCursor = { year: d.getFullYear(), month: d.getMonth() };
+    renderCalendar();
+  });
+
+  document.getElementById('todo-add-btn').addEventListener('click', addTodo);
+  document.getElementById('todo-input').addEventListener('keydown', (e) => e.key === 'Enter' && addTodo());
+  function addTodo() {
+    const input = document.getElementById('todo-input');
+    const text = input.value.trim();
+    if (!text) return;
+    state.todos.push({ id: 't' + Date.now(), date: selectedDate, text, done: false });
+    input.value = '';
+    save();
+  }
+
   function renderAll() {
     renderSummary();
     renderHabits();
     renderHealth();
     renderFinance();
+    renderCalendar();
+    renderTodoDetail();
   }
 
   document.getElementById('habit-add-btn').addEventListener('click', addHabit);
@@ -753,3 +1019,5 @@
   renderHeading();
   renderAll();
 </script>
+
+</body></html>
